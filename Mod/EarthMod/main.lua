@@ -10,9 +10,11 @@ local EarthMod = commonlib.gettable("Mod.EarthMod");
 ------------------------------------------------------------
 ]]
 NPL.load("(gl)Mod/EarthMod/gisCommand.lua");
+NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 
-local EarthMod   = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
-local gisCommand = commonlib.gettable("Mod.gisCommand"); 
+local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
+local gisCommand     = commonlib.gettable("Mod.gisCommand");
+local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
 LOG.SetLogLevel("DEBUG");
 
@@ -34,7 +36,6 @@ end
 function EarthMod:init()
 	LOG.std(nil, "info", "EarthMod", "plugin initialized");
 	gisCommand:init();
-
 end
 
 function EarthMod:OnLogin()
@@ -45,14 +46,11 @@ end
 function EarthMod:OnWorldLoad()
 	LOG.std(nil, "info", "EarthMod", "OnNewWorld");
 
-	NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
-	local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
-
 	CommandManager:RunCommand("/home");
-	CommandManager:RunCommand("/gis b42.png");
-	CommandManager:RunCommand("/take 126");
+	CommandManager:RunCommand("/gis -xz b42.png");
+	-- CommandManager:RunCommand("/take 126");
 	CommandManager:RunCommand("/box 1 1 1");
-	LOG.std(nil,"debug","CommandManager",CommandManager);
+	-- LOG.std(nil,"debug","CommandManager",CommandManager);
 end
 -- called when a world is unloaded. 
 
