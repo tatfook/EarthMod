@@ -1,15 +1,18 @@
 --[[
-Title: 
-Author(s):  
-Date: 
-Desc: 
+Title: Earth Mod
+Author(s):  big
+Date: 2017/1/24
+Desc: Earth Mod
 use the lib:
 ------------------------------------------------------------
 NPL.load("(gl)Mod/EarthMod/main.lua");
 local EarthMod = commonlib.gettable("Mod.EarthMod");
 ------------------------------------------------------------
 ]]
-local EarthMod = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
+NPL.load("(gl)Mod/EarthMod/gisCommand.lua");
+
+local EarthMod   = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
+local gisCommand = commonlib.gettable("Mod.gisCommand"); 
 
 LOG.SetLogLevel("DEBUG");
 
@@ -30,7 +33,8 @@ end
 
 function EarthMod:init()
 	LOG.std(nil, "info", "EarthMod", "plugin initialized");
-	LOG.std(nil, "debug", "EarthMod", "OKOKOKOKOK");
+	gisCommand:init();
+
 end
 
 function EarthMod:OnLogin()
@@ -45,7 +49,7 @@ function EarthMod:OnWorldLoad()
 	local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
 	CommandManager:RunCommand("/home");
-	CommandManager:RunCommand("/blockimage b42.png");
+	CommandManager:RunCommand("/gis b42.png");
 	CommandManager:RunCommand("/take 126");
 	CommandManager:RunCommand("/box 1 1 1");
 	LOG.std(nil,"debug","CommandManager",CommandManager);
