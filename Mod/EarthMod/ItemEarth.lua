@@ -11,12 +11,14 @@ local ItemEarth = commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth");
 ]]
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemBlockModel.lua");
 NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
+NPL.load("(gl)script/apps/Aries/Creator/Game/GUI/OpenFileDialog.lua");
 
 local ItemBlockModel = commonlib.gettable("MyCompany.Aries.Game.Items.ItemBlockModel");
 local ItemEarth      = commonlib.inherit(ItemBlockModel, commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth"));
 
 local block_types    = commonlib.gettable("MyCompany.Aries.Game.block_types")
 local ItemStack      = commonlib.gettable("MyCompany.Aries.Game.Items.ItemStack");
+local OpenFileDialog = commonlib.gettable("MyCompany.Aries.Game.GUI.OpenFileDialog");
 
 block_types.RegisterItemClass("ItemEarth", ItemEarth);
 
@@ -27,6 +29,24 @@ end
 function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super.OnSelect(self,itemStack);
 	GameLogic.SetStatus(L"点击下方按钮选择地图坐标");
+end
+
+--function ItemEarth:OnDeSelect()
+	--ItemCAD._super.OnDeSelect(self);
+	--GameLogic.SetStatus(nil);
+--end
+
+-- called whenever this item is clicked on the user interface when it is holding in hand of a given player (current player). 
+function ItemEarth:OnClickInHand(itemStack, entityPlayer)
+	-- if there is selected blocks, we will replace selection with current block in hand. 
+	if(GameLogic.GameMode:IsEditor()) then
+		
+	end
+end
+
+function ItemEarth:GoToMap()
+	local url = "npl://earth";
+	GameLogic.RunCommand("/open " .. url);
 end
 
 function ItemEarth:CreateTask(itemStack)

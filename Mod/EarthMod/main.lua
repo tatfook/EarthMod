@@ -9,11 +9,11 @@ NPL.load("(gl)Mod/EarthMod/main.lua");
 local EarthMod = commonlib.gettable("Mod.EarthMod");
 ------------------------------------------------------------
 ]]
-
 NPL.load("(gl)Mod/EarthMod/EarthSceneContext.lua");
 NPL.load("(gl)Mod/EarthMod/gisCommand.lua");
 NPL.load("(gl)Mod/EarthMod/ItemEarth.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
+NPL.load("(gl)script/apps/WebServer/WebServer.lua");
 
 local EarthMod          = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
 local gisCommand        = commonlib.gettable("Mod.gisCommand");

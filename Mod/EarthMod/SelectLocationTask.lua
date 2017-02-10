@@ -42,6 +42,22 @@ function SelectLocationTask.GetInstance()
 	return curInstance;
 end
 
+function SelectLocationTask:GetItem()
+	local itemStack = self:GetItemStack();
+	if(itemStack) then
+		return itemStack:GetItem();
+	end
+end
+
+function SelectLocationTask.OnClickSelectLocationScript()
+	local self = SelectLocationTask.GetInstance();
+	local item = self:GetItem();
+
+	if(item) then
+		item:GoToMap();
+	end
+end
+
 function SelectLocationTask:ShowPage()
 	local window = self:CreateGetToolWindow();
 	window:Show({
@@ -52,5 +68,8 @@ function SelectLocationTask:ShowPage()
 end
 
 function SelectLocationTask:Run()
+	curInstance = self;
+	self.finished = false;
+
 	self:ShowPage();
 end
