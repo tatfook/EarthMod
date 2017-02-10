@@ -1,0 +1,16 @@
+<pe:mcml>
+    <script type="text/npl" src="SelectLocationTask.lua" refresh="true">
+        <![CDATA[
+        SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
+        SelectLocationTask.InitPage(Page);
+        task = SelectLocationTask.GetInstance();
+        ]]>
+    </script>
+    <div style='padding:5px;background-color:#306df0;color:#ffffff'>
+        <input name="editBtn" value=''    type="button" onclick="EditCadTask.OnClickEditCadScript" />
+        <input name="openBtn" value='...' type="button" onclick="EditCadTask.OnClickChangeCadScript" style="margin-left:5px;"/>
+        <div>
+            <%=L"右键创建, 左键选择模型"%>
+        </div>
+    </div>
+</pe:mcml>
