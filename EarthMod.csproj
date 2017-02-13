@@ -40,7 +40,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="script/**" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth.page" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\assets\css\leaflet.css" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\assets\images\layers-2x.png" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\assets\images\layers.png" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-icon-2x.png" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-icon.png" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-shadow.png" />
+    <Content Include="script/apps\WebServer\admin\wp-content\pages\earth\js\leaflet.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\ace.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\demo.html" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\mode-lua.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\theme-github.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\theme-github1.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\theme-twilight.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\worker-html.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\ace\worker-lua.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\angular\bootstrap-colorpicker-module.min.js" />
+    <Content Include="script/apps\WebServer\admin\wp-includes\js\leaflet.js" />
     <Content Include="Mod/EarthMod\EarthSceneContext.lua" />
     <Content Include="Mod/EarthMod\gisCommand.lua" />
     <Content Include="Mod/EarthMod\gisToBlocksTask.lua" />
@@ -48,6 +65,14 @@
     <Content Include="Mod/EarthMod\main.lua" />
     <Content Include="Mod/EarthMod\SelectLocationTask.html" />
     <Content Include="Mod/EarthMod\textures\icon.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\app.js" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\css\leaflet.css" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\layers-2x.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\layers.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-icon-2x.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-icon.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-shadow.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\js\leaflet.js" />
   </ItemGroup>
   <ItemGroup>
     <None Include="InstallPackages.bat" />
@@ -58,6 +83,11 @@
   <ItemGroup>
     <Content Include=".gitattributes" />
     <Content Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="script\apps\WebServer\admin\wp-content\pages\earth\controllers\" />
+    <Folder Include="script\apps\WebServer\admin\wp-content\pages\earth\services\" />
+    <Folder Include="script\apps\WebServer\admin\wp-content\pages\earth\templates\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

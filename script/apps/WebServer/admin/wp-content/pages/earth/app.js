@@ -1,0 +1,1 @@
+﻿var earthModule = angular.module('EARTH', ['ngStorage', 'ui.bootstrap']);

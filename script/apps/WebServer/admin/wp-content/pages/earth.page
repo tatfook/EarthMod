@@ -7,10 +7,18 @@ Desc:
 ]]
 PAGE_NO_SIDE_BAR = true;
 
-wp_enqueue_script("jqueryui", "/wp-includes/js/jquery/jquery-ui.min.js"); 
-wp_enqueue_script("bootstrap", "/wp-includes/js/bootstrap/js/bootstrap.min.js");
-wp_enqueue_script("angular", "/wp-includes/js/angular/angular.min.js");
-wp_enqueue_script("angular-ui", "/wp-includes/js/angular/ui-bootstrap-tpls-1.3.3.min.js");
+wp_enqueue_script("ace",				"/wp-includes/js/ace/ace.js"); 
+wp_enqueue_script("angular",			"/wp-includes/js/angular/angular.min.js");
+wp_enqueue_script("ngStorage",			"/wp-includes/js/angular/ngStorage.js");
+wp_enqueue_script("ngSanitize",			"/wp-includes/js/angular/angular-sanitize.min.js");
+wp_enqueue_script("ui-bootstrap-tpls",	"/wp-includes/js/angular/ui-bootstrap-tpls-1.3.3.min.js");
+wp_enqueue_style("bootstrap-css",		"/wp-includes/js/bootstrap/css/bootstrap.min.css");
+wp_enqueue_script("jquery",				"/wp-includes/js/jquery/jquery.min.js");
+wp_enqueue_style("easyui_icon", 		"/wp-includes/js/jeasyui/themes/icon.css");
+
+wp_enqueue_script("EARTH",          "/wp-content/pages/earth/app.js");
+wp_enqueue_script("leaflet",            "/wp-content/pages/earth/js/leaflet.js");
+wp_enqueue_style("leaflet",             "/wp-content/pages/earth/assets/css/leaflet.css");
 ?>
 <style>
 	.earth-main{
@@ -20,14 +28,20 @@ wp_enqueue_script("angular-ui", "/wp-includes/js/angular/ui-bootstrap-tpls-1.3.3
     .earth-main .spot-light {
         text-align:center;
     }
+
+    .earth-main #map {
+        height: 500px;
+    }
 </style>
 
-<div class="earth-main" ng-app="Earth_App">
+<div class="earth-main" ng-app="EARTH">
 	<h1 class="spot-light">
         请选择需要转换Block的坐标
 	</h1>
-    <div>
-        maping
-    </div>
+    <div id="map"></div>
 </div>
+
+<script>
+    var mymap = L.map('map').setView([51.505, -0.09], 13);
+</script>
 
