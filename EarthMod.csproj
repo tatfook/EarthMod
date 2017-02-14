@@ -72,6 +72,7 @@
     <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-icon-2x.png" />
     <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-icon.png" />
     <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\assets\images\marker-shadow.png" />
+    <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\controllers\earthController.js" />
     <Content Include="script\apps\WebServer\admin\wp-content\pages\earth\js\leaflet.js" />
   </ItemGroup>
   <ItemGroup>
@@ -85,7 +86,6 @@
     <Content Include=".gitignore" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="script\apps\WebServer\admin\wp-content\pages\earth\controllers\" />
     <Folder Include="script\apps\WebServer\admin\wp-content\pages\earth\services\" />
     <Folder Include="script\apps\WebServer\admin\wp-content\pages\earth\templates\" />
   </ItemGroup>

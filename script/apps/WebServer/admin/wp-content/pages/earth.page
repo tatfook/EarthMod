@@ -16,9 +16,10 @@ wp_enqueue_style("bootstrap-css",		"/wp-includes/js/bootstrap/css/bootstrap.min.
 wp_enqueue_script("jquery",				"/wp-includes/js/jquery/jquery.min.js");
 wp_enqueue_style("easyui_icon", 		"/wp-includes/js/jeasyui/themes/icon.css");
 
-wp_enqueue_script("EARTH",          "/wp-content/pages/earth/app.js");
+wp_enqueue_script("EARTH",              "/wp-content/pages/earth/app.js");
 wp_enqueue_script("leaflet",            "/wp-content/pages/earth/js/leaflet.js");
 wp_enqueue_style("leaflet",             "/wp-content/pages/earth/assets/css/leaflet.css");
+wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/earthController.js");
 ?>
 <style>
 	.earth-main{
@@ -27,21 +28,49 @@ wp_enqueue_style("leaflet",             "/wp-content/pages/earth/assets/css/leaf
 
     .earth-main .spot-light {
         text-align:center;
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-weight: 100;
     }
 
     .earth-main #map {
         height: 500px;
     }
+
+    .earth-main button {
+        margin-top: 20px;
+    }
+
 </style>
 
 <div class="earth-main" ng-app="EARTH">
-	<h1 class="spot-light">
-        请选择需要转换Block的坐标
-	</h1>
-    <div id="map"></div>
+    <div ng-controller="earthController">
+	    <h2 class="spot-light">
+            请点击地图选择需要转换Block的坐标
+	    </h2>
+        <div id="map"></div>
+        <button type="button" ng-click="confirm" class="btn btn-success btn-lg btn-block">确定</button>
+    </div>
 </div>
 
 <script>
-    var mymap = L.map('map').setView([51.505, -0.09], 13);
+    var map = L.map('map').setView([22.54329, 113.94928], 13);
+
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var marker = null;
+    function onMapClick(e) {
+        if (marker != null) {
+            marker.remove();
+        }
+
+        marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map)
+                .bindPopup('当前坐标，纬度：' + e.latlng.lat.toFixed(4) + ' | 经度：' + e.latlng.lng.toFixed(4))
+                .openPopup();
+    }
+
+    map.on('click', onMapClick);
 </script>
 
