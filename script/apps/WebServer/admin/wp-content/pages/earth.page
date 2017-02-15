@@ -5,6 +5,19 @@ Author: big
 Date: 2017/2/10
 Desc: 
 ]]
+
+local lng = request:get("lng");
+local lat = request:get("lat");
+
+if(is_ajax()) then
+	add_action('wp_ajax_send_coordinate' , function()
+		response:send({"1111","222222"});
+		return;
+	end);
+
+	return;
+end
+
 PAGE_NO_SIDE_BAR = true;
 
 wp_enqueue_script("ace",				"/wp-includes/js/ace/ace.js"); 
@@ -20,6 +33,7 @@ wp_enqueue_script("EARTH",              "/wp-content/pages/earth/app.js");
 wp_enqueue_script("leaflet",            "/wp-content/pages/earth/js/leaflet.js");
 wp_enqueue_style("leaflet",             "/wp-content/pages/earth/assets/css/leaflet.css");
 wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/earthController.js");
+
 ?>
 <style>
 	.earth-main{
@@ -49,12 +63,14 @@ wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/ear
             请点击地图选择需要转换Block的坐标
 	    </h2>
         <div id="map"></div>
-        <button type="button" ng-click="confirm" class="btn btn-success btn-lg btn-block">确定</button>
+        <button type="button" ng-click="confirm()" class="btn btn-success btn-lg btn-block">确定</button>
     </div>
 </div>
 
 <script>
-    var map = L.map('map').setView([22.54329, 113.94928], 13);
+    var map  = L.map('map').setView([22.54329, 113.94928], 13);
+    var glng = null;
+    var glat = null;
 
     L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -69,6 +85,9 @@ wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/ear
         marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map)
                 .bindPopup('当前坐标，纬度：' + e.latlng.lat.toFixed(4) + ' | 经度：' + e.latlng.lng.toFixed(4))
                 .openPopup();
+
+        glng = e.latlng.lng;
+        glat = e.latlng.lat;
     }
 
     map.on('click', onMapClick);
