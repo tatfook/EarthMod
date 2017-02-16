@@ -17,8 +17,9 @@ SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
 local curInstance;
 
+SelectLocationTask.isFirstSelect = true;
 -- this is always a top level task. 
-SelectLocationTask.is_top_level = true;
+SelectLocationTask.is_top_level  = true;
 
 function SelectLocationTask:ctor()
 end
@@ -35,6 +36,12 @@ end
 local page;
 function SelectLocationTask.InitPage(Page)
 	page = Page;
+end
+
+function SelectLocationTask:RefreshPage()
+	if(page) then
+		page:Refresh(0.01);
+	end
 end
 
 -- get current instance
@@ -55,6 +62,19 @@ function SelectLocationTask.OnClickSelectLocationScript()
 
 	if(item) then
 		item:GoToMap();
+	end
+end
+
+function SelectLocationTask.setCoordinate(lng,lat)
+	SelectLocationTask.isFirstSelect = false;
+	SelectLocationTask.lng = lng;
+	SelectLocationTask.lat = lat;
+
+    local self = SelectLocationTask.GetInstance();
+	local item = self:GetItem();
+	
+	if(item) then
+		item:RefreshTask(self:GetItemStack());
 	end
 end
 

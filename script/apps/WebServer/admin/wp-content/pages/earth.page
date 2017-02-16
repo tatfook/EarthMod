@@ -5,13 +5,18 @@ Author: big
 Date: 2017/2/10
 Desc: 
 ]]
+NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
+
+local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 
 local lng = request:get("lng");
 local lat = request:get("lat");
 
 if(is_ajax()) then
 	add_action('wp_ajax_send_coordinate' , function()
-		response:send({"1111","222222"});
+		--通知Paracraft UI
+		SelectLocationTask.setCoordinate(lng,lat);
+		response:send();
 		return;
 	end);
 

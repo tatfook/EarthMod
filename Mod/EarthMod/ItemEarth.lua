@@ -49,6 +49,14 @@ function ItemEarth:GoToMap()
 	GameLogic.RunCommand("/open " .. url);
 end
 
+function ItemEarth:RefreshTask(itemStack)
+	local task = self:GetTask();
+	if(task) then
+		task:SetItemStack(itemStack);
+		task:RefreshPage();
+	end
+end
+
 function ItemEarth:CreateTask(itemStack)
 	local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 	local task = SelectLocationTask:new();

@@ -6,7 +6,13 @@
             task = SelectLocationTask.GetInstance();
         ]]>
     </script>
-    <div style='padding:5px;background-color:#306df0;color:#ffffff'>
-        <input name="editBtn" style="base-font-size:14px;font-size:14px;width:256px;height:45px;" value="点击进入地图选择坐标" type="button" onclick="SelectLocationTask.OnClickSelectLocationScript()" />
-    </div>
+    <div style='padding:5px;width:266px;height:55px;background-color:#306df0;color:#ffffff'>
+        <pe:if condition="<%= SelectLocationTask.isFirstSelect == true %>">
+            <input name="editBtn" style="base-font-size:14px;font-size:14px;width:256px;height:45px;" value="点击进入地图选择坐标" type="button" onclick="SelectLocationTask.OnClickSelectLocationScript()" />
+        </pe:if>
+        <pe:if condition="<%= SelectLocationTask.isFirstSelect == false %>">
+            <div style="width:236px;base-font-size:14px;font-size:14px;text-align:center;margin-left:10px;">经度：<%= string.format("%0.4f", SelectLocationTask.lng) %>&lt;&lt;&gt;&gt;纬度：<%= string.format("%0.4f", SelectLocationTask.lat) %></div>
+            <input name="editBtn" style="base-font-size:14px;font-size:14px;width:256px;height:25px;margin-top:1px;" value="重新选择" type="button" onclick="" />
+        </pe:if>
+</div>
 </pe:mcml>
