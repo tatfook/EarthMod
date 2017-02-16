@@ -12,8 +12,7 @@ local gisCommand = commonlib.gettable("Mod.gisCommand");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Materials/LocalTextures.lua");
 NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 
-local gisCommand = commonlib.inherit(nil,commonlib.gettable("Mod.gisCommand"));
-
+--local gisCommand = commonlib.inherit(nil,commonlib.gettable("Mod.gisCommand"));
 local CmdParser      = commonlib.gettable("MyCompany.Aries.Game.CmdParser");
 local EntityManager  = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
 local Tasks          = commonlib.gettable("MyCompany.Aries.Game.Tasks");
@@ -58,12 +57,3 @@ Commands["gis"] = {
 		end
 	end,
 };
-
-
-function gisCommand:ctor()
-end
-
-function gisCommand:init()
-	LOG.std(nil,"debug","gisCommand","init");
-	-- body
-end

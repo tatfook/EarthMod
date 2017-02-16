@@ -40,8 +40,6 @@ end
 function EarthMod:init()
 	LOG.std(nil, "info", "EarthMod", "plugin initialized");
 
-	gisCommand:init();
-
 	-- register a new block item, id < 10512 is internal items, which is not recommended to modify. 
 	GameLogic.GetFilters():add_filter("block_types", function(xmlRoot)
 		local blocks = commonlib.XPath.selectNode(xmlRoot, "/blocks/");
@@ -77,12 +75,6 @@ end
 
 function EarthMod:OnWorldLoad()
 	LOG.std(nil, "info", "EarthMod", "OnNewWorld");
-
-	--CommandManager:RunCommand("/home");
-	--CommandManager:RunCommand("/gis -xz b42.png");
-	--CommandManager:RunCommand("/take 126");
-	--CommandManager:RunCommand("/box 1 1 1");
-	-- LOG.std(nil,"debug","CommandManager",CommandManager);
 end
 -- called when a world is unloaded. 
 
