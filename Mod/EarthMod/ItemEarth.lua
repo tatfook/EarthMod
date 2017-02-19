@@ -39,12 +39,12 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 	if(SelectLocationTask.isFirstSelect) then
 		_guihelper.MessageBox(L"您还没有选择地图坐标");
 	else
-		CommandManager:RunCommand("/gis -xz b42.png");
+		LOG.std(nil,"debug","tryCreate",{SelectLocationTask.lat,SelectLocationTask.lng});
+		CommandManager:RunCommand("/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lng);
 
 		--CommandManager:RunCommand("/home");
 		--CommandManager:RunCommand("/take 126");
 		--CommandManager:RunCommand("/box 1 1 1");
-		LOG.std(nil,"debug","CommandManager",CommandManager);
 	end
 
 	return;

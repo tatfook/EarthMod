@@ -101,18 +101,8 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:Run()
-	self.finished = true;
-
-	if(GameLogic.GameMode:CanAddToHistory()) then
-		self.add_to_history = true;
-	end
-
-	if(self.operation == gisToBlocks.Operations.Load) then
-		return self:LoadToScene();
-	elseif(self.operation == gisToBlocks.Operations.InMem) then
-		return self:LoadToMemory();
-	end
+function gisToBlocks:GetApiData()
+	
 end
 
 -- @param pixel: {r,g,b,a}
@@ -291,4 +281,21 @@ function gisToBlocks:Undo()
 			BlockEngine:SetBlock(b[1],b[2],b[3], b[5] or 0, b[6], b[7]);
 		end
 	end
+end
+
+function gisToBlocks:Run()
+	echo(self,true);
+	self.finished = true;
+
+	if(GameLogic.GameMode:CanAddToHistory()) then
+		self.add_to_history = true;
+	end
+
+	local raster,vector = gisToBlock:GetApiData();
+
+--	if(self.operation == gisToBlocks.Operations.Load) then
+--		return self:LoadToScene();
+--	elseif(self.operation == gisToBlocks.Operations.InMem) then
+--		return self:LoadToMemory();
+--	end
 end

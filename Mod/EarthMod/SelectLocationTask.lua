@@ -11,7 +11,10 @@ local task = SelectLocationTask:new();
 task:Run();
 -------------------------------------------------------
 ]]
+NPL.load("(gl)Mod/EarthMod/main.lua");
+
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
+local EarthMod           = commonlib.gettable("Mod.EarthMod");
 
 SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
@@ -70,6 +73,8 @@ function SelectLocationTask.setCoordinate(lng,lat)
 	SelectLocationTask.lng = lng;
 	SelectLocationTask.lat = lat;
 
+	EarthMod:SetWorldData("coordinate",{{tostring(lat),name="lat",attr={type="number"}},{tostring(lng),name="lng",attr={type="number"}}});
+
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
 	
@@ -90,6 +95,22 @@ end
 function SelectLocationTask:Run()
 	curInstance = self;
 	self.finished = false;
+
+	local coordinate = EarthMod:GetWorldData("coordinate");
+
+	if(coordinate) then
+		SelectLocationTask.isFirstSelect = false;
+
+		for key,value in pairs(coordinate) do
+			if(type(value) == "table") then
+				if(value.name == "lat") then
+					SelectLocationTask.lat = value[1];
+				elseif(value.name == "lng") then
+					SelectLocationTask.lng = value[1];
+				end
+			end
+		end
+	end
 
 	self:ShowPage();
 end

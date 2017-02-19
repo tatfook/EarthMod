@@ -20,7 +20,8 @@ local gisCommand        = commonlib.gettable("Mod.gisCommand");
 local EarthSceneContext = commonlib.gettable("Mod.EarthMod.EarthSceneContext");
 local CommandManager    = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
-LOG.SetLogLevel("DEBUG");
+--LOG.SetLogLevel("DEBUG");
+EarthMod:Property({"Name", "EarthMod"});
 
 function EarthMod:ctor()
 end

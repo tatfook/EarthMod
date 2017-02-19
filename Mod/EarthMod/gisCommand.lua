@@ -24,36 +24,40 @@ local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager")
 
 Commands["gis"] = {
 	name="gis", 
-	quick_ref="", 
-	desc=[[]],
+	quick_ref="/gis [-croodinate] [lat] [lng]", 
+	desc=[[
+		
+	]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		LOG.std(nil,"debug","Commands",{cmd_name,cmd_text,cmd_params,formEntity});
 
-		local colors, filename, options;
+		local lat,lng;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 		LOG.std(nil,"debug","options, cmd_text",{options, cmd_text});
 
-		colors,  cmd_text = CmdParser.ParseInt(cmd_text);
-		LOG.std(nil,"debug","colors, cmd_text",{colors, cmd_text});
+		lat, cmd_text = CmdParser.ParseString(cmd_text);
+		lng, cmd_text = CmdParser.ParseString(cmd_text);
+		LOG.std(nil,"debug","colors, cmd_text",{lng, lat, cmd_text});
 
-		colors = colors or 65535;
+		local task = Tasks.gisToBlocks:new({lat=lat,lng=lng})
+		task:Run();
 
-		filename, cmd_text = CmdParser.ParseString(cmd_text);
-		LOG.std(nil,"debug","filename, cmd_text",{filename, cmd_text});
-		filename = filename or "preview.jpg";
-		filename = LocalTextures:GetByFileName(commonlib.Encoding.Utf8ToDefault(filename));
+--		filename, cmd_text = CmdParser.ParseString(cmd_text);
+--		LOG.std(nil,"debug","filename, cmd_text",{filename, cmd_text});
+--		filename = filename or "preview.jpg";
+--		filename = LocalTextures:GetByFileName(commonlib.Encoding.Utf8ToDefault(filename));
 
-		if(filename) then
-			local x, y, z;
-			x, y, z, cmd_text = CmdParser.ParsePos(cmd_text, fromEntity);
-
-			if(not x) then
-				x,y,z = EntityManager.GetFocus():GetBlockPos();	
-			end
-
-			LOG.std(nil,"debug","x,y,z",{x,y,z});
-			local task = Tasks.gisToBlocks:new({filename = filename,blockX = x,blockY = y, blockZ = z, colors=colors,options=options})
-			task:Run();
-		end
+--		if(filename) then
+--			local x, y, z;
+--			x, y, z, cmd_text = CmdParser.ParsePos(cmd_text, fromEntity);
+--
+--			if(not x) then
+--				x,y,z = EntityManager.GetFocus():GetBlockPos();	
+--			end
+--
+--			LOG.std(nil,"debug","x,y,z",{x,y,z});
+--			local task = Tasks.gisToBlocks:new({filename = filename,blockX = x,blockY = y, blockZ = z, colors=colors,options=options})
+--			task:Run();
+--		end
 	end,
 };
