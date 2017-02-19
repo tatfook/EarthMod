@@ -15,14 +15,16 @@ task:Run();
 NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/ide/System/Core/Color.lua");
+NPL.load("(gl)Mod/EarthMod/DownloadService.lua");
 
-local Color          = commonlib.gettable("System.Core.Color");
-local ItemColorBlock = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
-local UndoManager    = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
-local GameLogic      = commonlib.gettable("MyCompany.Aries.Game.GameLogic")
-local BlockEngine    = commonlib.gettable("MyCompany.Aries.Game.BlockEngine")
-local TaskManager    = commonlib.gettable("MyCompany.Aries.Game.TaskManager")
-local block_types    = commonlib.gettable("MyCompany.Aries.Game.block_types")
+local Color           = commonlib.gettable("System.Core.Color");
+local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
+local UndoManager     = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
+local GameLogic       = commonlib.gettable("MyCompany.Aries.Game.GameLogic")
+local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine")
+local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager")
+local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types")
+local DownloadService = commonlib.gettable("Mod.EarthMod.DownloadService");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -101,8 +103,11 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:GetApiData()
-	
+function gisToBlocks:GetData()
+	local vector = DownloadService:getOsmXMLData();
+	local raster = DownloadService:getOsmPNGData();
+
+	return raster,vector;
 end
 
 -- @param pixel: {r,g,b,a}
@@ -291,7 +296,7 @@ function gisToBlocks:Run()
 		self.add_to_history = true;
 	end
 
-	local raster,vector = gisToBlock:GetApiData();
+	local raster,vector = gisToBlock:GetData();
 
 --	if(self.operation == gisToBlocks.Operations.Load) then
 --		return self:LoadToScene();
