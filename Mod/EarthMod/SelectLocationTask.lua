@@ -28,7 +28,7 @@ function SelectLocationTask:ctor()
 end
 
 function SelectLocationTask:SetItemStack(itemStack)
-	LOG.std(nil,"debug","SetItemStack","+++++++++000000000++++++++++");
+	--LOG.std(nil,"debug","SetItemStack","+++++++++000000000++++++++++");
 	self.itemStack = itemStack;
 end
 
@@ -68,12 +68,12 @@ function SelectLocationTask.OnClickSelectLocationScript()
 	end
 end
 
-function SelectLocationTask.setCoordinate(lng,lat)
+function SelectLocationTask.setCoordinate(lat,lon)
 	SelectLocationTask.isFirstSelect = false;
-	SelectLocationTask.lng = lng;
 	SelectLocationTask.lat = lat;
+	SelectLocationTask.lon = lon;
 
-	EarthMod:SetWorldData("coordinate",{{tostring(lat),name="lat",attr={type="number"}},{tostring(lng),name="lng",attr={type="number"}}});
+	EarthMod:SetWorldData("coordinate",{{tostring(lat),name="lat",attr={type="number"}},{tostring(lon),name="lon",attr={type="number"}}});
 
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
@@ -105,11 +105,14 @@ function SelectLocationTask:Run()
 			if(type(value) == "table") then
 				if(value.name == "lat") then
 					SelectLocationTask.lat = value[1];
-				elseif(value.name == "lng") then
-					SelectLocationTask.lng = value[1];
+				elseif(value.name == "lon") then
+					SelectLocationTask.lon = value[1];
 				end
 			end
 		end
+
+		SelectLocationTask.lat = SelectLocationTask.lat or 0;
+		SelectLocationTask.lon = SelectLocationTask.lon or 0;
 	end
 
 	self:ShowPage();

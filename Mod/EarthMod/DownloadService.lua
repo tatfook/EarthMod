@@ -15,8 +15,9 @@ local DownloadService  = commonlib.gettable("Mod.EarthMod.DownloadService");
 local Encoding         = commonlib.gettable("System.Encoding");
 
 DownloadService.osmHost   = "osm.org";
-DownloadService.osmXMLUrl = "http://api."  .. self.osmHost .. "/api/0.6/map?bbox={{left}},{{bottom}},{{right}},{{top}}";
-DownloadService.osmPNGUrl = "http://tile." .. self.osmHost .. "/{{zoom}}/{{x}}/{{y}}.png";
+DownloadService.zoom      = 14;
+DownloadService.osmXMLUrl = "http://api."  .. DownloadService.osmHost .. "/api/0.6/map?bbox={{left}},{{bottom}},{{right}},{{top}}";
+DownloadService.osmPNGUrl = "http://tile." .. DownloadService.osmHost .. "/" .. DownloadService.zoom .. "/{x}/{y}.png";
 DownloadService.tryTimes  = 0;
 
 function DownloadService:ctor()
@@ -59,9 +60,34 @@ function DownloadService:retry(_err, _msg, _data, _params, _callback)
 end
 
 function DownloadService:getOsmXMLData()
-
+	
 end
 
-function DownloadService:getOsmPNGData()
+function DownloadService:getOsmPNGData(lat,lon)
+	local function deg2num(lat,lon,zoom)
+		local n = 2 ^ zoom
+		local lon_deg = tonumber(lon)
+		local lat_rad = math.rad(lat)
+		local xtile   = math.floor(n * ((lon_deg + 180) / 360))
+		local ytile   = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2)
+		return xtile, ytile
+	end
 
+	local x,y = deg2num(lat,lon,self.zoom);
+	LOG.std(nil,"debug","tile2deg",{x,y});
+	LOG.std(nil,"debug","osmPNGUrl",self.osmPNGUrl);
+
+	self.osmPNGUrl = self.osmPNGUrl:gsub("{x}",tostring(x));
+	self.osmPNGUrl = self.osmPNGUrl:gsub("{y}",tostring(y));
+
+	LOG.std(nil,"debug","getOsmPNGData",self.osmPNGUrl);
+	self:GetUrl(self.osmPNGUrl,function(data,err)
+		LOG.std(nil,"debug","GetUrl=data",data);
+		LOG.std(nil,"debug","GetUrl=err",err);
+		if(err == 200) then
+			return data;
+		else
+			return nil;
+		end
+	end);
 end

@@ -1,12 +1,12 @@
 ﻿earthModule.controller("earthController", function ($scope, $http) {
     $scope.confirm = function () {
-        if (glng != null && glat != null) {
+        if (glat != null && glon != null) {
             $http({
                 "method" : "POST",
                 "url"    : "/ajax/earth?action=send_coordinate",
                 "data": {
-                    "lng": glng,
-                    "lat": glat
+                    "lat": glat,
+                    "lon": glon
                 }
             })
             .then(function (response) {

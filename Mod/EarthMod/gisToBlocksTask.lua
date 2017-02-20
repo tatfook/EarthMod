@@ -104,10 +104,11 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:GetData()
-	local vector = DownloadService:getOsmXMLData();
-	local raster = DownloadService:getOsmPNGData();
+	--local vector = DownloadService:getOsmXMLData();
+	--echo(DownloadService,true);
+	local raster = DownloadService:getOsmPNGData(self.lat,self.lon);
 
-	return raster,vector;
+	--return raster,vector;
 end
 
 -- @param pixel: {r,g,b,a}
@@ -289,14 +290,14 @@ function gisToBlocks:Undo()
 end
 
 function gisToBlocks:Run()
-	echo(self,true);
+	--echo(self,true);
 	self.finished = true;
 
 	if(GameLogic.GameMode:CanAddToHistory()) then
 		self.add_to_history = true;
 	end
 
-	local raster,vector = gisToBlock:GetData();
+	local raster,vector = self:GetData();
 
 --	if(self.operation == gisToBlocks.Operations.Load) then
 --		return self:LoadToScene();

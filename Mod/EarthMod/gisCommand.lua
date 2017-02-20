@@ -31,15 +31,15 @@ Commands["gis"] = {
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		LOG.std(nil,"debug","Commands",{cmd_name,cmd_text,cmd_params,formEntity});
 
-		local lat,lng;
+		local lat,lon;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 		LOG.std(nil,"debug","options, cmd_text",{options, cmd_text});
 
 		lat, cmd_text = CmdParser.ParseString(cmd_text);
-		lng, cmd_text = CmdParser.ParseString(cmd_text);
-		LOG.std(nil,"debug","colors, cmd_text",{lng, lat, cmd_text});
+		lon, cmd_text = CmdParser.ParseString(cmd_text);
+		LOG.std(nil,"debug","colors, cmd_text",{lat,lon,cmd_text});
 
-		local task = Tasks.gisToBlocks:new({lat=lat,lng=lng})
+		local task = Tasks.gisToBlocks:new({lat=lat,lon=lon});
 		task:Run();
 
 --		filename, cmd_text = CmdParser.ParseString(cmd_text);
