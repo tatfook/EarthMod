@@ -95,6 +95,9 @@ wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/ear
 
         glat = e.latlng.lat;
         glon = e.latlng.lng;
+
+		console.log(glat);
+		console.log(glon);
     }
 
     map.on('click', onMapClick);

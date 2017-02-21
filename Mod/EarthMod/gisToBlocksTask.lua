@@ -104,9 +104,9 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:GetData()
-	--local vector = DownloadService:getOsmXMLData();
 	--echo(DownloadService,true);
 	local raster = DownloadService:getOsmPNGData(self.lat,self.lon);
+	local vector = DownloadService:getOsmXMLData();
 
 	--return raster,vector;
 end

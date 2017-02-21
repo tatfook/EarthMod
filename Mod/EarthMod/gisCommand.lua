@@ -37,7 +37,7 @@ Commands["gis"] = {
 
 		lat, cmd_text = CmdParser.ParseString(cmd_text);
 		lon, cmd_text = CmdParser.ParseString(cmd_text);
-		LOG.std(nil,"debug","colors, cmd_text",{lat,lon,cmd_text});
+		LOG.std(nil,"debug","lat,lon,cmd_text",{lat,lon,cmd_text});
 
 		local task = Tasks.gisToBlocks:new({lat=lat,lon=lon});
 		task:Run();
