@@ -108,7 +108,7 @@ function gisToBlocks:GetData()
 	local raster = DownloadService:getOsmPNGData(self.lat,self.lon);
 	local vector = DownloadService:getOsmXMLData();
 
-	--return raster,vector;
+	return raster,vector;
 end
 
 -- @param pixel: {r,g,b,a}

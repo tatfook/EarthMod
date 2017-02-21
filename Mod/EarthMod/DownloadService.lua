@@ -10,13 +10,16 @@ local DownloadService = commonlib.gettable("Mod.EarthMod.DownloadService");
 ------------------------------------------------------------
 ]]
 NPL.load("(gl)script/ide/System/Encoding/base64.lua");
+NPL.load("(gl)script/ide/Encoding.lua");
+NPL.load("(gl)script/ide/Files.lua");
 
 local DownloadService  = commonlib.gettable("Mod.EarthMod.DownloadService");
 local Encoding         = commonlib.gettable("System.Encoding");
 
+
 DownloadService.osmHost   = "osm.org";
 DownloadService.zoom      = 17;
-DownloadService.osmXMLUrl = "http://api."  .. DownloadService.osmHost .. "/api/0.6/map?bbox={{left}},{{bottom}},{{right}},{{top}}";
+DownloadService.osmXMLUrl = "http://api."  .. DownloadService.osmHost .. "/api/0.6/map?bbox={left},{bottom},{right},{top}";
 DownloadService.osmPNGUrl = "http://tile." .. DownloadService.osmHost .. "/" .. DownloadService.zoom .. "/{x}/{y}.png";
 DownloadService.tryTimes  = 0;
 
@@ -68,27 +71,40 @@ function DownloadService:getOsmXMLData()
 		return lon_deg, lat_deg
 	end
 
-	local lon_deg_0,lat_deg_0     = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
-	local lon_deg_255,lat_deg_255 = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
+	local left,top     = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
+	local right,bottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
 
-	LOG.std(nil,"debug","lon_deg_0,lat_deg_0",{lon_deg_0,lat_deg_0})
-	LOG.std(nil,"debug","lon_deg_255,lat_deg_255",{lon_deg_255,lat_deg_255})
+	self.osmXMLUrl = self.osmXMLUrl:gsub("{left}",tostring(left));
+	self.osmXMLUrl = self.osmXMLUrl:gsub("{bottom}",tostring(bottom));
+	self.osmXMLUrl = self.osmXMLUrl:gsub("{right}",tostring(right));
+	self.osmXMLUrl = self.osmXMLUrl:gsub("{top}",tostring(top));
+
+	LOG.std(nil,"debug","osmXMLUrl",self.osmXMLUrl);
+
+	self:GetUrl(self.osmXMLUrl,function(data,err)
+		LOG.std(nil,"debug","GetUrl=data",data);
+		LOG.std(nil,"debug","GetUrl=err",err);
+		if(err == 200) then
+			local file = ParaIO.open("/xml.osm", "w");
+			file:write(data,#data);
+			file:close();
+
+			return data;
+		else
+			return nil;
+		end
+	end);
 end
 
 function DownloadService:getOsmPNGData(lat,lon)
 	local function deg2num(lat,lon,zoom)
 		local n = 2 ^ zoom
-		LOG.std(nil,"debug","n",n);
+
 		local lon_deg = tonumber(lon)
-		LOG.std(nil,"debug","lon_deg",lon_deg);
 		local lat_rad = math.rad(lat)
-		LOG.std(nil,"debug","lat_rad",lat_rad);
 		local xtile   = math.floor(n * ((lon_deg + 180) / 360))
-		LOG.std(nil,"debug","xtile",xtile);
 		local ln = math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)));
-		LOG.std(nil,"debug","ln",ln);
 		local ytile   = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2)
-		LOG.std(nil,"debug","ytile",ytile);
 		return xtile, ytile
 	end
 
@@ -107,6 +123,10 @@ function DownloadService:getOsmPNGData(lat,lon)
 		LOG.std(nil,"debug","GetUrl=data",data);
 		LOG.std(nil,"debug","GetUrl=err",err);
 		if(err == 200) then
+			local file = ParaIO.open("/tile.png", "w");
+			file:write(data,#data);
+			file:close();
+
 			return data;
 		else
 			return nil;
