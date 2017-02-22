@@ -1,4 +1,4 @@
---[[
+ï»¿--[[
 Title: EarthSceneContext
 Author(s): ray
 Date: 2017.2
@@ -134,7 +134,7 @@ function EarthSceneContext:LoadOsm()
 
 	local osmFilePath = "lujiazui3.osm";
 
-	--ÉÏº£ÆÖ¶«Â½¼Ò×ì¸ÛÎñ´óÏÃ×ø±ê
+	--ä¸Šæµ·æµ¦ä¸œé™†å®¶å˜´æ¸¯åŠ¡å¤§å¦åæ ‡
 	local zoom = 17;
 	local lon = 121.493798467075;
 	local lat = 31.2426585143162;

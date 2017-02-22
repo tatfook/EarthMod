@@ -178,13 +178,15 @@ end
 
 function gisToBlocks:OSMToBlock(vector)
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
+	--LOG.std(nil,"debug","xmlRoot",xmlRoot);
 	if (not xmlRoot) then
 		LOG.std(nil, "info", "ParseOSM", "Failed loading OSM");
 		_guihelper.MessageBox("Failed loading OSM");
 		return;
 	end
 
-	LOG.std(nil,"debug","xmlRoot",xmlRoot);
+	local osmnode = commonlib.XPath.selectNodes(xmlRoot, "/osm")[1];
+	LOG.std(nil,"debug","osmnode",osmnode.attr);
 end
 
 function gisToBlocks:PNGToBlock(px,py,pz)
