@@ -25,6 +25,7 @@ local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine")
 local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager")
 local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types")
 local DownloadService = commonlib.gettable("Mod.EarthMod.DownloadService");
+local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -40,7 +41,7 @@ gisToBlocks.operation = gisToBlocks.Operations.Load;
 -- how many concurrent creation point allowed: currently this must be 1
 gisToBlocks.concurrent_creation_point_count = 1;
 -- the color schema. can be 1, 2, 16. where 1 is only a single color. 
-gisToBlocks.colors = 16;
+gisToBlocks.colors = 32;
 
 --RGB, block_id
 local block_colors = {
@@ -103,12 +104,14 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:GetData()
+function gisToBlocks:GetData(_callback)
 	--echo(DownloadService,true);
-	local raster = DownloadService:getOsmPNGData(self.lat,self.lon);
-	local vector = DownloadService:getOsmXMLData();
-
-	return raster,vector;
+	local raster,vector;
+	DownloadService:getOsmPNGData(self.lat,self.lon,function(raster)
+		DownloadService:getOsmXMLData(function(vector)
+			_callback(raster,vector);
+		end);
+	end);
 end
 
 -- @param pixel: {r,g,b,a}
@@ -173,37 +176,28 @@ function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 	end
 end
 
--- Load template using a coroutine, 100 blocks per second. 
--- @param self.blockX, self.blockY, self.blockZ
--- @param self.colors: 1 | 2 | 16 | 65535   how many colors to use
--- @param self.options: {xy=true, yz=true, xz=true}
-function gisToBlocks:LoadToScene()
-	local filename = self.filename;
-	if(not filename) then
+function gisToBlocks:OSMToBlock(vector)
+	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
+	if (not xmlRoot) then
+		LOG.std(nil, "info", "ParseOSM", "Failed loading OSM");
+		_guihelper.MessageBox("Failed loading OSM");
 		return;
 	end
+
+	LOG.std(nil,"debug","xmlRoot",xmlRoot);
+end
+
+function gisToBlocks:PNGToBlock(px,py,pz)
+	local file   = ParaIO.open("tile.png", "image");
 	local colors = self.colors;
-	local px, py, pz = self.blockX, self.blockY, self.blockZ;
-	if(not px) then
-		return
-	end
-
-	local plane = "xy";
-	if(self.options) then
-		if(self.options.xz) then
-			plane = "xz";
-		elseif(self.options.yz) then
-			plane = "yz";
-		end
-	end
-
-	local file = ParaIO.open(filename, "image");
+	local plane  = "xz";
+	--echo(file);
 	if(file:IsValid()) then
-		local ver = file:ReadInt();
-		local width = file:ReadInt();
-		local height = file:ReadInt();
-		local bytesPerPixel = file:ReadInt();
-		LOG.std(nil, "info", "gisToBlocks", {filename, ver, width, height, bytesPerPixel});
+		local ver           = file:ReadInt();
+		local width         = file:ReadInt();
+		local height        = file:ReadInt();
+		local bytesPerPixel = file:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
 		local block_world = GameLogic.GetBlockWorld();
 		local function CreateBlock_(x, y, block_id, block_data)
@@ -219,8 +213,9 @@ function gisToBlocks:LoadToScene()
 			self:AddBlock(x, y, z, block_id, block_data);
 		end
 
-		-- array of {r,g,b,a}
-		local pixel = {}; 
+		--array of {r,g,b,a}
+		local pixel = {};
+
 		if(bytesPerPixel >= 3) then
 			local block_per_tick = 100;
 			local count = 0;
@@ -232,10 +227,13 @@ function gisToBlocks:LoadToScene()
 				for y=1, height do
 					for x=1, width do
 						pixel = file:ReadBytes(bytesPerPixel, pixel);
+
 						if(pixel[4]~=0) then
 							-- transparent pixel does not show up. 
+							--LOG.std(nil,"debug","pixel,colors",{pixel});
 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
 							if(block_id) then
+								--LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
 								CreateBlock_(x,y, block_id, block_data);
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
@@ -254,7 +252,7 @@ function gisToBlocks:LoadToScene()
 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
 				local status, result = coroutine.resume(worker_thread_co);
 				if not status then
-					LOG.std(nil, "info", "gisToBlocks", "finished with %d blocks: %s ", count, tostring(result));
+					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
 					timer:Change();
 					file:close();
 				end
@@ -263,10 +261,32 @@ function gisToBlocks:LoadToScene()
 
 			UndoManager.PushCommand(self);
 		else
-			LOG.std(nil, "error", "gisToBlocks", "format not supported");
+			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
 			file:close();
 		end
 	end
+end
+
+-- Load template using a coroutine, 100 blocks per second. 
+-- @param self.blockX, self.blockY, self.blockZ
+-- @param self.colors: 1 | 2 | 16 | 65535   how many colors to use
+-- @param self.options: {xy=true, yz=true, xz=true}
+function gisToBlocks:LoadToScene(raster,vector)
+	--local filename = self.filename;
+	--if(not filename) then
+		--return;
+	--end
+
+	local colors = self.colors;
+	--local px, py, pz = self.blockX, self.blockY, self.blockZ;
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();	
+
+	if(not px) then
+		return
+	end
+
+	self:PNGToBlock(px,py,pz);
+	self:OSMToBlock(vector);
 end
 
 function gisToBlocks:FrameMove()
@@ -297,7 +317,9 @@ function gisToBlocks:Run()
 		self.add_to_history = true;
 	end
 
-	local raster,vector = self:GetData();
+	self:GetData(function(raster,vector)
+		self:LoadToScene(raster,vector);
+	end);
 
 --	if(self.operation == gisToBlocks.Operations.Load) then
 --		return self:LoadToScene();

@@ -14,7 +14,6 @@ NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 
 --local gisCommand = commonlib.inherit(nil,commonlib.gettable("Mod.gisCommand"));
 local CmdParser      = commonlib.gettable("MyCompany.Aries.Game.CmdParser");
-local EntityManager  = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
 local Tasks          = commonlib.gettable("MyCompany.Aries.Game.Tasks");
 local LocalTextures  = commonlib.gettable("MyCompany.Aries.Game.Materials.LocalTextures");
 LOG.std(nil,"debug","LocalTextures",LocalTextures);

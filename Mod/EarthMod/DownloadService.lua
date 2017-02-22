@@ -62,7 +62,7 @@ function DownloadService:retry(_err, _msg, _data, _params, _callback)
 	end
 end
 
-function DownloadService:getOsmXMLData()
+function DownloadService:getOsmXMLData(_callback)
 	local function pixel2deg(tileX,tileY,pixelX,pixelY,zoom)
 		local n = 2 ^ zoom;
 		local lon_deg = (tileX + pixelX/256) / n * 360.0 - 180.0;
@@ -82,21 +82,21 @@ function DownloadService:getOsmXMLData()
 	LOG.std(nil,"debug","osmXMLUrl",self.osmXMLUrl);
 
 	self:GetUrl(self.osmXMLUrl,function(data,err)
-		LOG.std(nil,"debug","GetUrl=data",data);
-		LOG.std(nil,"debug","GetUrl=err",err);
+		--LOG.std(nil,"debug","GetUrl=data",data);
+		--LOG.std(nil,"debug","GetUrl=err",err);
 		if(err == 200) then
 			local file = ParaIO.open("/xml.osm", "w");
 			file:write(data,#data);
 			file:close();
 
-			return data;
+			_callback(data);
 		else
 			return nil;
 		end
 	end);
 end
 
-function DownloadService:getOsmPNGData(lat,lon)
+function DownloadService:getOsmPNGData(lat,lon,_callback)
 	local function deg2num(lat,lon,zoom)
 		local n = 2 ^ zoom
 
@@ -120,14 +120,14 @@ function DownloadService:getOsmPNGData(lat,lon)
 
 	LOG.std(nil,"debug","getOsmPNGData",self.osmPNGUrl);
 	self:GetUrl(self.osmPNGUrl,function(data,err)
-		LOG.std(nil,"debug","GetUrl=data",data);
-		LOG.std(nil,"debug","GetUrl=err",err);
+		--LOG.std(nil,"debug","GetUrl=data",data);
+		--LOG.std(nil,"debug","GetUrl=err",err);
 		if(err == 200) then
 			local file = ParaIO.open("/tile.png", "w");
 			file:write(data,#data);
 			file:close();
 
-			return data;
+			_callback(data);
 		else
 			return nil;
 		end
