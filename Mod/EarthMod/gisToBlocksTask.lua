@@ -63,6 +63,32 @@ local block_colors = {
 	{25, 22, 22,	block_types.names.Black_Wool},
 }
 
+local function tile2deg(x, y, z)
+    local n = 2 ^ z
+    local lon_deg = x / n * 360.0 - 180.0
+    local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * y / n)))
+    local lat_deg = lat_rad * 180.0 / math.pi
+    return lon_deg, lat_deg
+end
+
+local function deg2tile(lon, lat, zoom)
+    local n = 2 ^ zoom
+    local lon_deg = tonumber(lon)
+    local lat_rad = math.rad(lat)
+    local xtile = math.floor(n * ((lon_deg + 180) / 360))
+    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2)
+    return xtile, ytile
+end
+
+local function deg2pixel(lon, lat, zoom)
+    local n = 2 ^ zoom
+    local lon_deg = tonumber(lon)
+    local lat_rad = math.rad(lat)
+    local xtile = math.floor(n * ((lon_deg + 180) / 360) * 256 % 256 + 0.5)
+    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * 256 % 256 + 0.5)
+    return xtile, ytile
+end
+
 -- Calculates distance between two RGB colors
 local function GetColorDist(colorRGB, blockRGB)
 	return math.max(math.abs(colorRGB[1]-blockRGB[1]), math.abs(colorRGB[2]-blockRGB[2]), math.abs(colorRGB[3]-blockRGB[3]));
@@ -186,7 +212,124 @@ function gisToBlocks:OSMToBlock(vector)
 	end
 
 	local osmnode = commonlib.XPath.selectNodes(xmlRoot, "/osm")[1];
-	LOG.std(nil,"debug","osmnode",osmnode.attr);
+	LOG.std(nil,"debug","osmnode-attr",osmnode.attr);
+
+	local osmNodeList = {};
+	local count = 1;
+
+	for osmnode in commonlib.XPath.eachNode(osmnode, "/node") do
+		--LOG.std(nil,"debug","osmnode",osmnode);
+		osmNodeItem = { id = osmnode.attr.id; lat = osmnode.attr.lat; lon = osmnode.attr.lon; }
+		osmNodeList[count] = osmNodeItem;
+		count = count + 1;
+	end
+
+	for i=1, #osmNodeList do
+		LOG.std(nil,"debug","i",i);
+	    local item = osmNodeList[i];
+		if (i < 2) then	
+			LOG.std(nil, "info", "osmnode", item.id..","..item.lat..","..item.lon);
+		    break;
+		end
+	end
+
+	local osmBuildingList = {}
+	local osmBuildingCount = 0;
+
+	local waynode;
+	for waynode in commonlib.XPath.eachNode(osmnode, "/way") do
+	    local found = false; --only find one building nodes
+		--LOG.std(nil,"debug","waynode",waynode);
+		local tagnode;
+		for tagnode in commonlib.XPath.eachNode(waynode, "/tag") do	
+			--LOG.std(nil,"debug","tagnode",tagnode);
+
+			if (tagnode.attr.k == "building") then
+				LOG.std(nil, "info", "way tag", waynode.attr.id);	
+
+				local buildingPointList = {}
+				local buildingPointCount = 0;
+
+				--find node belong to building tag way
+				--<nd ref="1765621163"/>
+				local ndnode;
+				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 					
+					for i=1, #osmNodeList do
+						local item = osmNodeList[i];
+						if (item.id == ndnode.attr.ref) then
+							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, zoom);
+							if (cur_tilex == tilex) and (cur_tiley == tiley) then
+								
+								local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
+								LOG.std(nil, "info", "found building node:", str);
+
+								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
+								xpos, ypos = deg2pixel(item.lon, item.lat, zoom);
+								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
+								buildingPointCount = buildingPointCount + 1;
+								buildingPointList[buildingPointCount] = buildingPoint;
+							end					
+						end
+				    end
+			    end
+
+				osmBuilding = {id = waynode.id, points = buildingPointList};
+				LOG.std(nil, "info", "osmBuilding", osmBuilding);
+				osmBuildingCount = osmBuildingCount + 1;
+				osmBuildingList[osmBuildingCount] = osmBuilding;
+				
+				found = true;
+			end
+		end
+
+	    if (found) then
+	        --break;
+	    end
+	end
+
+	LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
+	for k,v in pairs(osmBuildingList) do
+		LOG.std(nil, "info", "k", k);
+		LOG.std(nil, "info", "v", v);
+
+		buildingPointList = v.points;
+
+		--[[if (buildingPointList) then
+			LOG.std(nil, "info", "buildingPointList", buildingPointList);
+			local length = #buildingPointList;
+			if (length > 3) then
+				for i = 1, length - 1 do				
+					local building = buildingPointList[i];
+					--building.x = 19200 + building.x;
+					--building.y = 19200 + building.y;
+					building.z = 5;
+
+					--local gostr = "/tp "..tostring(building.x).." "..tostring(building.z).." "..tostring(building.y)
+					--LOG.std(nil, "info", "Command", gostr);
+					--CommandManager:RunCommand(gostr);
+
+					local building2 = buildingPointList[i + 1];
+					--building2.x = 19200 + building2.x;
+					--building2.y = 19200 + building2.y;
+					building2.z = 5;
+
+					--local linestr1 = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
+					--LOG.std(nil, "info", "drawline", linestr1);
+					--building.x, building.y = deg2pixel(building.x, building.y, zoom);
+					--building2.x, building2.y = deg2pixel(building2.x, building2.y, zoom);
+					local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
+					LOG.std(nil, "info", "drawline", linestr);
+
+					factor = 4;
+					if (building.x < building2.x) then
+						drawline(building.x / factor + 19200, building.y / factor + 19200, building2.x / factor + 19200, building2.y / factor + 19200, building.z);
+					else
+						drawline(building2.x / factor + 19200, building2.y / factor + 19200, building.x / factor + 19200, building.y / factor + 19200, building.z);
+					end
+				end
+			end
+		end]]
+	end
 end
 
 function gisToBlocks:PNGToBlock(px,py,pz)

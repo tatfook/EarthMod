@@ -205,7 +205,6 @@ function EarthSceneContext:LoadOsm()
 								buildingPointCount = buildingPointCount + 1;
 								buildingPointList[buildingPointCount] = buildingPoint;
 							end
-														
 						end
 				    end
 			    end
