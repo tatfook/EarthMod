@@ -16,16 +16,19 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/ide/System/Core/Color.lua");
 NPL.load("(gl)Mod/EarthMod/DownloadService.lua");
+NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
 local UndoManager     = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
-local GameLogic       = commonlib.gettable("MyCompany.Aries.Game.GameLogic")
-local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine")
-local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager")
-local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types")
+local GameLogic       = commonlib.gettable("MyCompany.Aries.Game.GameLogic");
+local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
+local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types");
+local names           = commonlib.gettable("MyCompany.Aries.Game.block_types.names");
+local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager");
 local DownloadService = commonlib.gettable("Mod.EarthMod.DownloadService");
 local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
+local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -62,6 +65,67 @@ local block_colors = {
 	{150, 52, 48,	block_types.names.Red_Wool},
 	{25, 22, 22,	block_types.names.Black_Wool},
 }
+
+local function drawpixel(x, y, z)
+		--local spawn_x, spawn_y, spawn_z = self:GetSpawnPosition();			
+		--LOG.std(nil, "info", "spawn_x", spawn_x);
+		--local x, y, z = BlockEngine:real(spawn_x, spawn_y, spawn_z); 
+		EntityManager.GetPlayer():SetBlockPos(x, z, y); 
+
+		local blockstr = "/box 1 1 1";
+		--LOG.std(nil, "info", "Command", blockstr);
+		CommandManager:RunCommand(blockstr);
+end
+
+local function drawline(x1, y1, x2, y2, z)
+	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
+	x=x1;
+	y=y1;
+	dx=math.abs(x2-x1);
+	dy=math.abs(y2-y1);
+
+	if(x2>x1) then
+	s1=1;
+	else
+	s1=-1;
+	end
+
+	if(y2>y1) then
+	s2=1;
+	else
+	s2=-1;
+	end
+
+	if(dy>dx) then
+	temp=dx;
+	dx=dy;
+	dy=temp;
+	interchange=1;	
+	else
+	interchange=0;
+	end
+
+	p=2*dy-dx;
+
+	for i=1,dx do
+		drawpixel(x,y,z);
+		if(p>=0) then
+			if(interchange==0) then
+				y=y+s2;
+			else
+				x=x+s1;
+			end
+			p=p-2*dx;
+		end
+
+		if(interchange==0) then
+			x=x+s1; 
+		else
+			y=y+s2;
+		end
+			p=p+2*dy;
+	end
+end
 
 local function tile2deg(x, y, z)
     local n = 2 ^ z
@@ -245,26 +309,28 @@ function gisToBlocks:OSMToBlock(vector)
 			--LOG.std(nil,"debug","tagnode",tagnode);
 
 			if (tagnode.attr.k == "building") then
-				LOG.std(nil, "info", "way tag", waynode.attr.id);	
+				LOG.std(nil, "info", "way tag", waynode.attr.id);
 
-				local buildingPointList = {}
+				local buildingPointList = {};
 				local buildingPointCount = 0;
 
 				--find node belong to building tag way
 				--<nd ref="1765621163"/>
 				local ndnode;
-				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 					
+				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 
+					--LOG.std(nil,"debug","#osmNodeList",#osmNodeList);				
 					for i=1, #osmNodeList do
 						local item = osmNodeList[i];
 						if (item.id == ndnode.attr.ref) then
-							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, zoom);
-							if (cur_tilex == tilex) and (cur_tiley == tiley) then
+							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, 17);
+							if (cur_tilex == self.tileX) and (cur_tiley == self.tileY) then
 								
 								local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
 								LOG.std(nil, "info", "found building node:", str);
 
 								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
-								xpos, ypos = deg2pixel(item.lon, item.lat, zoom);
+								xpos, ypos = deg2pixel(item.lon, item.lat, 17);
+								LOG.std(nil,"debug","xpos,ypos",{xpos,ypos});
 								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
 								buildingPointCount = buildingPointCount + 1;
 								buildingPointList[buildingPointCount] = buildingPoint;
@@ -287,6 +353,8 @@ function gisToBlocks:OSMToBlock(vector)
 	    end
 	end
 
+	CommandManager:RunCommand("/take 28");
+
 	LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
 	for k,v in pairs(osmBuildingList) do
 		LOG.std(nil, "info", "k", k);
@@ -294,7 +362,7 @@ function gisToBlocks:OSMToBlock(vector)
 
 		buildingPointList = v.points;
 
-		--[[if (buildingPointList) then
+		if (buildingPointList) then
 			LOG.std(nil, "info", "buildingPointList", buildingPointList);
 			local length = #buildingPointList;
 			if (length > 3) then
@@ -302,7 +370,7 @@ function gisToBlocks:OSMToBlock(vector)
 					local building = buildingPointList[i];
 					--building.x = 19200 + building.x;
 					--building.y = 19200 + building.y;
-					building.z = 5;
+					building.z = 6;
 
 					--local gostr = "/tp "..tostring(building.x).." "..tostring(building.z).." "..tostring(building.y)
 					--LOG.std(nil, "info", "Command", gostr);
@@ -311,7 +379,7 @@ function gisToBlocks:OSMToBlock(vector)
 					local building2 = buildingPointList[i + 1];
 					--building2.x = 19200 + building2.x;
 					--building2.y = 19200 + building2.y;
-					building2.z = 5;
+					building2.z = 6;
 
 					--local linestr1 = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
 					--LOG.std(nil, "info", "drawline", linestr1);
@@ -328,7 +396,7 @@ function gisToBlocks:OSMToBlock(vector)
 					end
 				end
 			end
-		end]]
+		end
 	end
 end
 
@@ -461,6 +529,8 @@ function gisToBlocks:Run()
 	if(GameLogic.GameMode:CanAddToHistory()) then
 		self.add_to_history = true;
 	end
+
+	self.tileX,self.tileY = deg2tile(self.lon,self.lat,17);
 
 	self:GetData(function(raster,vector)
 		self:LoadToScene(raster,vector);
