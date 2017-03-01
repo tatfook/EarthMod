@@ -40,6 +40,8 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 		_guihelper.MessageBox(L"您还没有选择地图坐标");
 	else
 		LOG.std(nil,"debug","tryCreate",{SelectLocationTask.lat,SelectLocationTask.lon});
+		CommandManager:RunCommand("/fog 50000");
+		CommandManager:RunCommand("/renderdist 256");
 		CommandManager:RunCommand("/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon);
 
 		--CommandManager:RunCommand("/home");

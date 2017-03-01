@@ -70,11 +70,13 @@ local function drawpixel(x, y, z)
 		--local spawn_x, spawn_y, spawn_z = self:GetSpawnPosition();			
 		--LOG.std(nil, "info", "spawn_x", spawn_x);
 		--local x, y, z = BlockEngine:real(spawn_x, spawn_y, spawn_z); 
-		EntityManager.GetPlayer():SetBlockPos(x, z, y); 
+		--EntityManager.GetPlayer():SetBlockPos(x, z, y); 
 
-		local blockstr = "/box 1 1 1";
+		--local blockstr = "/box 1 1 1";
 		--LOG.std(nil, "info", "Command", blockstr);
-		CommandManager:RunCommand(blockstr);
+		--CommandManager:RunCommand(blockstr);
+		LOG.std(nil,"debug","x,y,z",{x,y,z})
+		BlockEngine:SetBlock(x,z,y,28);
 end
 
 local function drawline(x1, y1, x2, y2, z)
@@ -85,45 +87,47 @@ local function drawline(x1, y1, x2, y2, z)
 	dy=math.abs(y2-y1);
 
 	if(x2>x1) then
-	s1=1;
+		s1=1;
 	else
-	s1=-1;
+		s1=-1;
 	end
 
-	if(y2>y1) then
-	s2=1;
+	if(y2 > y1) then
+		s2 = 1;
 	else
-	s2=-1;
+		s2 = -1;
 	end
 
-	if(dy>dx) then
-	temp=dx;
-	dx=dy;
-	dy=temp;
-	interchange=1;	
+	if(dy > dx) then
+		temp = dx;
+		dx   = dy;
+		dy   = temp;
+	    interchange = 1;
 	else
-	interchange=0;
+	    interchange = 0;
 	end
 
-	p=2*dy-dx;
+	p = 2*dy - dx;
 
 	for i=1,dx do
 		drawpixel(x,y,z);
+
 		if(p>=0) then
 			if(interchange==0) then
-				y=y+s2;
+				y = y+s2;
 			else
-				x=x+s1;
+				x = x+s1;
 			end
-			p=p-2*dx;
+			p = p-2*dx;
 		end
 
-		if(interchange==0) then
-			x=x+s1; 
+		if(interchange == 0) then
+			x = x+s1; 
 		else
-			y=y+s2;
+			y = y+s2;
 		end
-			p=p+2*dy;
+
+		p = p+2*dy;
 	end
 end
 
@@ -245,11 +249,6 @@ local function GetBlockIdFromPixel(pixel, colors)
 	end
 end
 
--- Load To Memory
-function gisToBlocks:LoadToMemory()
-	-- TODO:
-end
-
 function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(x,y,z);
@@ -261,12 +260,14 @@ function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 		self.history[#(self.history)+1] = {x,y,z, block_id, from_id, from_data, from_entity_data};
 	end
 	local block_template = block_types.get(block_id);
+
 	if(block_template) then
 		block_template:Create(x,y,z, false, block_data);
 	end
 end
 
-function gisToBlocks:OSMToBlock(vector)
+function gisToBlocks:OSMToBlock(vector,px, py, pz)
+	
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 	--LOG.std(nil,"debug","xmlRoot",xmlRoot);
 	if (not xmlRoot) then
@@ -288,14 +289,14 @@ function gisToBlocks:OSMToBlock(vector)
 		count = count + 1;
 	end
 
-	for i=1, #osmNodeList do
-		LOG.std(nil,"debug","i",i);
-	    local item = osmNodeList[i];
-		if (i < 2) then	
-			LOG.std(nil, "info", "osmnode", item.id..","..item.lat..","..item.lon);
-		    break;
-		end
-	end
+--	for i=1, #osmNodeList do
+--		LOG.std(nil,"debug","i",i);
+--	    local item = osmNodeList[i];
+--		if (i < 2) then	
+--			LOG.std(nil, "info", "osmnode", item.id..","..item.lat..","..item.lon);
+--		    break;
+--		end
+--	end
 
 	local osmBuildingList = {}
 	local osmBuildingCount = 0;
@@ -326,11 +327,11 @@ function gisToBlocks:OSMToBlock(vector)
 							if (cur_tilex == self.tileX) and (cur_tiley == self.tileY) then
 								
 								local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
-								LOG.std(nil, "info", "found building node:", str);
+								--LOG.std(nil, "info", "found building node:", str);
 
 								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
 								xpos, ypos = deg2pixel(item.lon, item.lat, 17);
-								LOG.std(nil,"debug","xpos,ypos",{xpos,ypos});
+								--LOG.std(nil,"debug","xpos,ypos",{xpos,ypos});
 								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
 								buildingPointCount = buildingPointCount + 1;
 								buildingPointList[buildingPointCount] = buildingPoint;
@@ -340,7 +341,7 @@ function gisToBlocks:OSMToBlock(vector)
 			    end
 
 				osmBuilding = {id = waynode.id, points = buildingPointList};
-				LOG.std(nil, "info", "osmBuilding", osmBuilding);
+				--LOG.std(nil, "info", "osmBuilding", osmBuilding);
 				osmBuildingCount = osmBuildingCount + 1;
 				osmBuildingList[osmBuildingCount] = osmBuilding;
 				
@@ -353,9 +354,9 @@ function gisToBlocks:OSMToBlock(vector)
 	    end
 	end
 
-	CommandManager:RunCommand("/take 28");
+	--CommandManager:RunCommand("/take 28");
 
-	LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
+	--LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
 	for k,v in pairs(osmBuildingList) do
 		LOG.std(nil, "info", "k", k);
 		LOG.std(nil, "info", "v", v);
@@ -388,11 +389,12 @@ function gisToBlocks:OSMToBlock(vector)
 					local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
 					LOG.std(nil, "info", "drawline", linestr);
 
-					factor = 4;
+
+
 					if (building.x < building2.x) then
-						drawline(building.x / factor + 19200, building.y / factor + 19200, building2.x / factor + 19200, building2.y / factor + 19200, building.z);
+						drawline(px + building.x , pz - building.y + 256, px + building2.x, pz - building2.y + 256, building.z);
 					else
-						drawline(building2.x / factor + 19200, building2.y / factor + 19200, building.x / factor + 19200, building.y / factor + 19200, building.z);
+						drawline(px + building2.x, pz - building2.y + 256, px + building.x, pz - building.y + 256, building.z);
 					end
 				end
 			end
@@ -499,7 +501,7 @@ function gisToBlocks:LoadToScene(raster,vector)
 	end
 
 	self:PNGToBlock(px,py,pz);
-	self:OSMToBlock(vector);
+	self:OSMToBlock(vector,px, py, pz);
 end
 
 function gisToBlocks:FrameMove()
