@@ -357,7 +357,7 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 					--local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
 					--LOG.std(nil, "info", "drawline", linestr);
 
-					local factor = 1;
+					local factor = 1.2;
 
 					if (building.x < building2.x) then
 						drawline(px + building.x/factor , pz - building.y + 256/factor, px + building2.x/factor, pz - building2.y/factor + 256/factor, building.z);
@@ -373,12 +373,13 @@ end
 function gisToBlocks:PNGToBlock(px,py,pz)
 	local file   = ParaIO.open("tile.png", "image");
 	local colors = self.colors;
+	local factor = 1.2;
 
 	--echo(file);
 	if(file:IsValid()) then
 		local ver           = file:ReadInt();
-		local width         = file:ReadInt();
-		local height        = file:ReadInt();
+		local width         = file:ReadInt()/factor;
+		local height        = file:ReadInt()/factor;
 		local bytesPerPixel = file:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 

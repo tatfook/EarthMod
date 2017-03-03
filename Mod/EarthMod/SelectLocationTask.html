@@ -8,7 +8,7 @@
     </script>
     <aries:window mode="thin" style='width:366px;height:100px;color:#ffffff' title='<%=L"坐标选择" %>'>
         <pe:if condition="<%= SelectLocationTask.isFirstSelect == true %>">
-            <input name="editBtn" style="base-font-size:14px;font-size:14px;width:356px;height:45px;" value="点击进入地图选择坐标" type="button" onclick="SelectLocationTask.OnClickSelectLocationScript()" />
+            <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:356px;height:45px;margin-top:5px;margin-bottom:5px;" value="点击进入地图选择坐标" type="button" onclick="SelectLocationTask.OnClickSelectLocationScript()" />
         </pe:if>
         <pe:if condition="<%= SelectLocationTask.isFirstSelect == false %>">
             <div style="width:336px;base-font-size:14px;font-size:14px;text-align:left;margin-left:55px;margin-top:5px;margin-bottom:5px;">纬度：<%= string.format("%0.4f", SelectLocationTask.lat) %> &lt;&lt;&gt;&gt; 经度：<%= string.format("%0.4f", SelectLocationTask.lon) %></div>
