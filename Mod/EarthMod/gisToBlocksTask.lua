@@ -67,15 +67,7 @@ local block_colors = {
 }
 
 local function drawpixel(x, y, z)
-		--local spawn_x, spawn_y, spawn_z = self:GetSpawnPosition();			
-		--LOG.std(nil, "info", "spawn_x", spawn_x);
-		--local x, y, z = BlockEngine:real(spawn_x, spawn_y, spawn_z); 
-		--EntityManager.GetPlayer():SetBlockPos(x, z, y); 
-
-		--local blockstr = "/box 1 1 1";
-		--LOG.std(nil, "info", "Command", blockstr);
-		--CommandManager:RunCommand(blockstr);
-		LOG.std(nil,"debug","x,y,z",{x,y,z})
+		--LOG.std(nil,"debug","x,y,z",{x,y,z})
 		BlockEngine:SetBlock(x,z,y,28);
 end
 
@@ -276,7 +268,7 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	end
 
 	local osmnode = commonlib.XPath.selectNodes(xmlRoot, "/osm")[1];
-	LOG.std(nil,"debug","osmnode-attr",osmnode.attr);
+	--LOG.std(nil,"debug","osmnode-attr",osmnode.attr);
 
 	local osmNodeList = {};
 	local count = 1;
@@ -300,7 +292,7 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 			--LOG.std(nil,"debug","tagnode",tagnode);
 
 			if (tagnode.attr.k == "building") then
-				LOG.std(nil, "info", "way tag", waynode.attr.id);
+				--LOG.std(nil, "info", "way tag", waynode.attr.id);
 
 				local buildingPointList = {};
 				local buildingPointCount = 0;
@@ -316,7 +308,7 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, 17);
 							if (cur_tilex == self.tileX) and (cur_tiley == self.tileY) then
 								
-								local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
+								--local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
 								--LOG.std(nil, "info", "found building node:", str);
 
 								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
@@ -346,26 +338,26 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 
 	--LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
 	for k,v in pairs(osmBuildingList) do
-		LOG.std(nil, "info", "k", k);
-		LOG.std(nil, "info", "v", v);
+		--LOG.std(nil, "info", "k", k);
+		--LOG.std(nil, "info", "v", v);
 
 		buildingPointList = v.points;
 
 		if (buildingPointList) then
-			LOG.std(nil, "info", "buildingPointList", buildingPointList);
+			--LOG.std(nil, "info", "buildingPointList", buildingPointList);
 			local length = #buildingPointList;
 			if (length > 3) then
 				for i = 1, length - 1 do				
-					local building = buildingPointList[i];
-					building.z = pz;
+					local building  = buildingPointList[i];
+					building.z  = py+1;
 
 					local building2 = buildingPointList[i + 1];
-					building2.z = pz;
+					building2.z = py+1;
 
-					local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
-					LOG.std(nil, "info", "drawline", linestr);
+					--local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
+					--LOG.std(nil, "info", "drawline", linestr);
 
-					local factor = 1.2;
+					local factor = 1;
 
 					if (building.x < building2.x) then
 						drawline(px + building.x/factor , pz - building.y + 256/factor, px + building2.x/factor, pz - building2.y/factor + 256/factor, building.z);
@@ -393,7 +385,7 @@ function gisToBlocks:PNGToBlock(px,py,pz)
 		local block_world = GameLogic.GetBlockWorld();
 
 		local function CreateBlock_(x, y, block_id, block_data)
-			local x, y, z;
+			local z;
 			x, y, z = px+x, py, pz+y;
 			ParaBlockWorld.LoadRegion(block_world, x, y, z);
 			self:AddBlock(x, y, z, block_id, block_data);
