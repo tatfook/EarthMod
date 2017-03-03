@@ -65,7 +65,7 @@ wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/ear
 <div class="earth-main" ng-app="EARTH">
     <div ng-controller="earthController">
 	    <h2 class="spot-light">
-            请点击地图选择需要转换Block的坐标
+            请选择坐标位置后，确定
 	    </h2>
         <div id="map"></div>
         <button type="button" ng-click="confirm()" class="btn btn-success btn-lg btn-block">确定</button>

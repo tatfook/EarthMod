@@ -267,7 +267,6 @@ function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 end
 
 function gisToBlocks:OSMToBlock(vector,px, py, pz)
-	
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 	--LOG.std(nil,"debug","xmlRoot",xmlRoot);
 	if (not xmlRoot) then
@@ -288,15 +287,6 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 		osmNodeList[count] = osmNodeItem;
 		count = count + 1;
 	end
-
---	for i=1, #osmNodeList do
---		LOG.std(nil,"debug","i",i);
---	    local item = osmNodeList[i];
---		if (i < 2) then	
---			LOG.std(nil, "info", "osmnode", item.id..","..item.lat..","..item.lon);
---		    break;
---		end
---	end
 
 	local osmBuildingList = {}
 	local osmBuildingCount = 0;
@@ -354,8 +344,6 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	    end
 	end
 
-	--CommandManager:RunCommand("/take 28");
-
 	--LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
 	for k,v in pairs(osmBuildingList) do
 		LOG.std(nil, "info", "k", k);
@@ -369,32 +357,20 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 			if (length > 3) then
 				for i = 1, length - 1 do				
 					local building = buildingPointList[i];
-					--building.x = 19200 + building.x;
-					--building.y = 19200 + building.y;
-					building.z = 6;
-
-					--local gostr = "/tp "..tostring(building.x).." "..tostring(building.z).." "..tostring(building.y)
-					--LOG.std(nil, "info", "Command", gostr);
-					--CommandManager:RunCommand(gostr);
+					building.z = pz;
 
 					local building2 = buildingPointList[i + 1];
-					--building2.x = 19200 + building2.x;
-					--building2.y = 19200 + building2.y;
-					building2.z = 6;
+					building2.z = pz;
 
-					--local linestr1 = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
-					--LOG.std(nil, "info", "drawline", linestr1);
-					--building.x, building.y = deg2pixel(building.x, building.y, zoom);
-					--building2.x, building2.y = deg2pixel(building2.x, building2.y, zoom);
 					local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
 					LOG.std(nil, "info", "drawline", linestr);
 
-
+					local factor = 1.2;
 
 					if (building.x < building2.x) then
-						drawline(px + building.x , pz - building.y + 256, px + building2.x, pz - building2.y + 256, building.z);
+						drawline(px + building.x/factor , pz - building.y + 256/factor, px + building2.x/factor, pz - building2.y/factor + 256/factor, building.z);
 					else
-						drawline(px + building2.x, pz - building2.y + 256, px + building.x, pz - building.y + 256, building.z);
+						drawline(px + building2.x/factor, pz/factor - building2.y + 256/factor, px + building.x/factor, pz - building.y/factor + 256/factor, building.z);
 					end
 				end
 			end
@@ -405,7 +381,7 @@ end
 function gisToBlocks:PNGToBlock(px,py,pz)
 	local file   = ParaIO.open("tile.png", "image");
 	local colors = self.colors;
-	local plane  = "xz";
+
 	--echo(file);
 	if(file:IsValid()) then
 		local ver           = file:ReadInt();
@@ -415,15 +391,10 @@ function gisToBlocks:PNGToBlock(px,py,pz)
 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
 		local block_world = GameLogic.GetBlockWorld();
+
 		local function CreateBlock_(x, y, block_id, block_data)
-			local z;
-			if(plane == "xy") then
-				x, y, z = px+x, py+y, pz;
-			elseif(plane == "yz") then
-				x, y, z = px, py+y, pz+x;
-			elseif(plane == "xz") then
-				x, y, z = px+x, py, pz+y;
-			end
+			local x, y, z;
+			x, y, z = px+x, py, pz+y;
 			ParaBlockWorld.LoadRegion(block_world, x, y, z);
 			self:AddBlock(x, y, z, block_id, block_data);
 		end
@@ -435,9 +406,11 @@ function gisToBlocks:PNGToBlock(px,py,pz)
 			local block_per_tick = 100;
 			local count = 0;
 			local row_padding_bytes = (bytesPerPixel*width)%4;
+
 			if(row_padding_bytes >0) then
 				row_padding_bytes = 4-row_padding_bytes;
 			end
+
 			local worker_thread_co = coroutine.create(function ()
 				for y=1, height do
 					for x=1, width do

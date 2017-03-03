@@ -1,4 +1,4 @@
---[[
+﻿--[[
 Title: SelectLocation Task/Command
 Author(s): big
 Date: 2017/2/9
@@ -60,12 +60,17 @@ function SelectLocationTask:GetItem()
 end
 
 function SelectLocationTask.OnClickSelectLocationScript()
-	local self = SelectLocationTask.GetInstance();
-	local item = self:GetItem();
-
-	if(item) then
-		item:GoToMap();
+	_guihelper.MessageBox(L"点击后打开外部浏览器，点击地图选择坐标。", function(res)
+	if(res and res == _guihelper.DialogResult.Yes) then
+		local self = SelectLocationTask.GetInstance();
+		local item = self:GetItem();
+		
+		if(item) then
+			item:GoToMap();
+		end
 	end
+end, _guihelper.MessageBoxButtons.YesNo);
+
 end
 
 function SelectLocationTask.setCoordinate(lat,lon)
@@ -85,10 +90,23 @@ end
 
 function SelectLocationTask:ShowPage()
 	local window = self:CreateGetToolWindow();
-	window:Show({
-		name="SelectLocationTask", 
-		url="Mod/EarthMod/SelectLocationTask.html",
-		alignment="_ctb", left=0, top=-55, width = 256, height = 64,
+
+	System.App.Commands.Call("File.MCMLWindowFrame", {
+		url  = "Mod/EarthMod/SelectLocationTask.html", 
+		name = "SelectLocationTask", 
+		isShowTitleBar = false,
+		DestroyOnClose = true, -- prevent many ViewProfile pages staying in memory / false will only hide window
+		style = CommonCtrl.WindowFrame.ContainerStyle,
+		zorder = 0,
+		allowDrag = true,
+		bShow = bShow,
+		directPosition = true,
+			align = "_ctb",
+			x = 0,
+			y = -55,
+			width = 356,
+			height = 100,
+		cancelShowAnimation = true,
 	});
 end
 
