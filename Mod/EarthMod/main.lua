@@ -47,7 +47,7 @@ function EarthMod:init()
 
 		if(blocks) then
 			blocks[#blocks+1] = {name="block", attr = {name="Earth",
-				id = 10512, item_class="ItemEarth", text="NPL Earth",
+				id = 10513, item_class="ItemEarth", text="NPL Earth",
 				icon = "Mod/EarthMod/textures/icon.png",
 			}}
 			LOG.std(nil, "info", "Earth", "Earth block is registered");

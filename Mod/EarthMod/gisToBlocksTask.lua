@@ -336,6 +336,9 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	    end
 	end
 
+	local factor = 1.2;
+	local PNGSize = math.ceil(256/factor);
+
 	--LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
 	for k,v in pairs(osmBuildingList) do
 		--LOG.std(nil, "info", "k", k);
@@ -347,22 +350,24 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 			--LOG.std(nil, "info", "buildingPointList", buildingPointList);
 			local length = #buildingPointList;
 			if (length > 3) then
-				for i = 1, length - 1 do				
-					local building  = buildingPointList[i];
-					building.z  = py+1;
+				for i = 1, length - 1 do
+					local buildingA = buildingPointList[i];
+					buildingA.cx    = px + math.ceil(buildingA.x/factor);
+					buildingA.cy    = pz - math.ceil(buildingA.y/factor) + PNGSize;
+					buildingA.cz    = py+1;
 
-					local building2 = buildingPointList[i + 1];
-					building2.z = py+1;
+					local buildingB = buildingPointList[i + 1];
+					buildingB.cx    = px + math.ceil(buildingB.x/factor);
+					buildingB.cy    = pz - math.ceil(buildingB.y/factor) + PNGSize;
+					buildingB.cz    = py+1;
 
 					--local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
 					--LOG.std(nil, "info", "drawline", linestr);
 
-					local factor = 1;
-
-					if (building.x < building2.x) then
-						drawline(px + building.x/factor , pz - building.y + 256/factor, px + building2.x/factor, pz - building2.y/factor + 256/factor, building.z);
+					if (buildingA.x < buildingB.x) then
+						drawline(buildingA.cx , buildingA.cy , buildingB.cx , buildingB.cy , buildingA.cz);
 					else
-						drawline(px + building2.x/factor, pz/factor - building2.y + 256/factor, px + building.x/factor, pz - building.y/factor + 256/factor, building.z);
+						drawline(buildingB.cx , buildingB.cy , buildingA.cx , buildingA.cy , buildingB.cz);
 					end
 				end
 			end

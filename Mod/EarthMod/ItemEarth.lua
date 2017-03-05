@@ -43,10 +43,6 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 		CommandManager:RunCommand("/fog 50000");
 		CommandManager:RunCommand("/renderdist 256");
 		CommandManager:RunCommand("/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon);
-
-		--CommandManager:RunCommand("/home");
-		--CommandManager:RunCommand("/take 126");
-		--CommandManager:RunCommand("/box 1 1 1");
 	end
 
 	return;
