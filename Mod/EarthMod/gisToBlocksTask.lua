@@ -68,7 +68,7 @@ local block_colors = {
 
 local function drawpixel(x, y, z)
 		--LOG.std(nil,"debug","x,y,z",{x,y,z})
-		BlockEngine:SetBlock(x,z,y,28);
+		gisToBlocks:AddBlock(x,z,y,28);
 end
 
 local function drawline(x1, y1, x2, y2, z)
@@ -191,13 +191,24 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:GetData(_callback)
-	--echo(DownloadService,true);
 	local raster,vector;
-	DownloadService:getOsmPNGData(self.lat,self.lon,function(raster)
-		DownloadService:getOsmXMLData(function(vector)
-			_callback(raster,vector);
+
+	if(self.cache == 'true') then
+		DownloadService:getOsmPNGData(self.lat,self.lon,function(raster)
+			DownloadService:getOsmXMLData(function(vector)
+				raster = ParaIO.open("tile.png", "image");
+				_callback(raster,vector);
+			end);
 		end);
-	end);
+	else
+		raster = ParaIO.open("tile.png", "image");
+
+		local vectorFile = ParaIO.open("xml.osm", "r");
+		vector           = vectorFile:GetText(0, -1);
+		vectorFile:close();
+
+		_callback(raster,vector);
+	end
 end
 
 -- @param pixel: {r,g,b,a}
@@ -258,9 +269,9 @@ function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 	end
 end
 
-function gisToBlocks:OSMToBlock(vector,px, py, pz)
+function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
-	--LOG.std(nil,"debug","xmlRoot",xmlRoot);
+
 	if (not xmlRoot) then
 		LOG.std(nil, "info", "ParseOSM", "Failed loading OSM");
 		_guihelper.MessageBox("Failed loading OSM");
@@ -268,13 +279,11 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	end
 
 	local osmnode = commonlib.XPath.selectNodes(xmlRoot, "/osm")[1];
-	--LOG.std(nil,"debug","osmnode-attr",osmnode.attr);
 
 	local osmNodeList = {};
 	local count = 1;
 
 	for osmnode in commonlib.XPath.eachNode(osmnode, "/node") do
-		--LOG.std(nil,"debug","osmnode",osmnode);
 		osmNodeItem = { id = osmnode.attr.id; lat = osmnode.attr.lat; lon = osmnode.attr.lon; }
 		osmNodeList[count] = osmNodeItem;
 		count = count + 1;
@@ -286,22 +295,17 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	local waynode;
 	for waynode in commonlib.XPath.eachNode(osmnode, "/way") do
 	    local found = false; --only find one building nodes
-		--LOG.std(nil,"debug","waynode",waynode);
+
 		local tagnode;
 		for tagnode in commonlib.XPath.eachNode(waynode, "/tag") do	
-			--LOG.std(nil,"debug","tagnode",tagnode);
-
 			if (tagnode.attr.k == "building") then
-				--LOG.std(nil, "info", "way tag", waynode.attr.id);
 
 				local buildingPointList = {};
 				local buildingPointCount = 0;
 
-				--find node belong to building tag way
-				--<nd ref="1765621163"/>
+				--find node belong to building tag way <nd ref="1765621163"/>
 				local ndnode;
-				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 
-					--LOG.std(nil,"debug","#osmNodeList",#osmNodeList);				
+				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 			
 					for i=1, #osmNodeList do
 						local item = osmNodeList[i];
 						if (item.id == ndnode.attr.ref) then
@@ -313,7 +317,7 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 
 								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
 								xpos, ypos = deg2pixel(item.lon, item.lat, 17);
-								--LOG.std(nil,"debug","xpos,ypos",{xpos,ypos});
+
 								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
 								buildingPointCount = buildingPointCount + 1;
 								buildingPointList[buildingPointCount] = buildingPoint;
@@ -336,18 +340,13 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	    end
 	end
 
-	local factor = 1.2;
+	local factor = 1;
 	local PNGSize = math.ceil(256/factor);
 
-	--LOG.std(nil, "info", "osmBuildingList", osmBuildingList);
 	for k,v in pairs(osmBuildingList) do
-		--LOG.std(nil, "info", "k", k);
-		--LOG.std(nil, "info", "v", v);
-
 		buildingPointList = v.points;
 
 		if (buildingPointList) then
-			--LOG.std(nil, "info", "buildingPointList", buildingPointList);
 			local length = #buildingPointList;
 			if (length > 3) then
 				for i = 1, length - 1 do
@@ -361,9 +360,6 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 					buildingB.cy    = pz - math.ceil(buildingB.y/factor) + PNGSize;
 					buildingB.cz    = py+1;
 
-					--local linestr = tostring(building.x).." "..tostring(building.y).." "..tostring(building2.x).." "..tostring(building2.y).." "..tostring(building.z)
-					--LOG.std(nil, "info", "drawline", linestr);
-
 					if (buildingA.x < buildingB.x) then
 						drawline(buildingA.cx , buildingA.cy , buildingB.cx , buildingB.cy , buildingA.cz);
 					else
@@ -375,17 +371,15 @@ function gisToBlocks:OSMToBlock(vector,px, py, pz)
 	end
 end
 
-function gisToBlocks:PNGToBlock(px,py,pz)
-	local file   = ParaIO.open("tile.png", "image");
+function gisToBlocks:PNGToBlock(raster, px, py, pz)
 	local colors = self.colors;
-	local factor = 1.2;
+	local factor = 1;
 
-	--echo(file);
-	if(file:IsValid()) then
-		local ver           = file:ReadInt();
-		local width         = file:ReadInt();
-		local height        = file:ReadInt();
-		local bytesPerPixel = file:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+	if(raster:IsValid()) then
+		local ver           = raster:ReadInt();
+		local width         = raster:ReadInt();
+		local height        = raster:ReadInt();
+		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
 		local block_world = GameLogic.GetBlockWorld();
@@ -405,25 +399,26 @@ function gisToBlocks:PNGToBlock(px,py,pz)
 			local count = 0;
 			local row_padding_bytes = (bytesPerPixel*width)%4;
 
-			if(row_padding_bytes >0) then
+			if(row_padding_bytes > 0) then
 				row_padding_bytes = 4-row_padding_bytes;
 			end
 
-			local worker_thread_co = coroutine.create(function ()
-				for y=1, height do
-					for x=1, width do
-						pixel = file:ReadBytes(bytesPerPixel, pixel);
-
+--			local worker_thread_co = coroutine.create(function ()
+				for y=1, width do
+					for x=1, height do
+						pixel = raster:ReadBytes(bytesPerPixel, pixel);
 						if(pixel[4]~=0) then
 							-- transparent pixel does not show up. 
-							--LOG.std(nil,"debug","pixel,colors",{pixel});
 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
+							LOG.std(nil,"debug","block_id, block_data",{block_id, block_data});
 							if(block_id) then
 								--LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
-								CreateBlock_(x,y, block_id, block_data);
+								if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
+									CreateBlock_(x,y, block_id, block_data);
+								end
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
-									coroutine.yield(true);
+--									coroutine.yield(true);
 								end
 							end
 						end
@@ -431,48 +426,39 @@ function gisToBlocks:PNGToBlock(px,py,pz)
 					if(row_padding_bytes > 0) then
 						file:ReadBytes(row_padding_bytes, pixel);
 					end
-				end	
-				return;
-			end)
-
-			local timer = commonlib.Timer:new({callbackFunc = function(timer)
-				local status, result = coroutine.resume(worker_thread_co);
-				if not status then
-					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
-					timer:Change();
-					file:close();
 				end
-			end})
-			timer:Change(30,30);
+--				return;
+--			end)
+
+--			local timer = commonlib.Timer:new({callbackFunc = function(timer)
+--				local status, result = coroutine.resume(worker_thread_co);
+--				if not status then
+--					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
+--					timer:Change();
+--					raster:close();
+--				end
+--			end})
+--			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
 			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
-			file:close();
+			raster:close();
 		end
 	end
 end
 
--- Load template using a coroutine, 100 blocks per second. 
--- @param self.blockX, self.blockY, self.blockZ
--- @param self.colors: 1 | 2 | 16 | 65535   how many colors to use
--- @param self.options: {xy=true, yz=true, xz=true}
 function gisToBlocks:LoadToScene(raster,vector)
-	--local filename = self.filename;
-	--if(not filename) then
-		--return;
-	--end
-
 	local colors = self.colors;
-	--local px, py, pz = self.blockX, self.blockY, self.blockZ;
+
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();	
 
 	if(not px) then
 		return
 	end
-
-	self:PNGToBlock(px,py,pz);
-	self:OSMToBlock(vector,px, py, pz);
+	
+	self:PNGToBlock(raster, px, py, pz);
+	self:OSMToBlock(vector, px, py, pz);
 end
 
 function gisToBlocks:FrameMove()

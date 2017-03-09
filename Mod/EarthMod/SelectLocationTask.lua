@@ -74,10 +74,17 @@ end
 
 function SelectLocationTask.setCoordinate(lat,lon)
 	SelectLocationTask.isFirstSelect = false;
-	SelectLocationTask.lat = lat;
-	SelectLocationTask.lon = lon;
+
+	if(lat ~= SelectLocationTask.lat or lon ~=SelectLocationTask.lon) then
+		SelectLocationTask.isChange = true;
+		SelectLocationTask.lat      = lat;
+		SelectLocationTask.lon      = lon;
+	end
 
 	EarthMod:SetWorldData("coordinate",{lat=tostring(lat),lon=tostring(lon)});
+	--EarthMod:SetWorldData("testString","OKOKOK");
+	--EarthMod:SetWorldData("testNumber",123456.3333);
+	--EarthMod:SetWorldData("testBool",false);
 	EarthMod:SaveWorldData();
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
@@ -114,9 +121,13 @@ function SelectLocationTask:Run()
 	self.finished = false;
 
 	local coordinate = EarthMod:GetWorldData("coordinate");
+	--local testString = EarthMod:GetWorldData("testString");
+	--local testNumber = EarthMod:GetWorldData("testNumber");
+	--local testBool   = EarthMod:GetWorldData("testBool");
 
 	if(coordinate) then
 		SelectLocationTask.isFirstSelect = false;
+		SelectLocationTask.isChage       = false;
 
 		SelectLocationTask.lat = coordinate.lat or 0;
 		SelectLocationTask.lon = coordinate.lon or 0;

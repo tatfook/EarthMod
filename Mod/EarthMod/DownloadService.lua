@@ -82,8 +82,6 @@ function DownloadService:getOsmXMLData(_callback)
 	LOG.std(nil,"debug","osmXMLUrl",self.osmXMLUrl);
 
 	self:GetUrl(self.osmXMLUrl,function(data,err)
-		--LOG.std(nil,"debug","GetUrl=data",data);
-		--LOG.std(nil,"debug","GetUrl=err",err);
 		if(err == 200) then
 			local file = ParaIO.open("/xml.osm", "w");
 			file:write(data,#data);
@@ -120,8 +118,6 @@ function DownloadService:getOsmPNGData(lat,lon,_callback)
 
 	LOG.std(nil,"debug","getOsmPNGData",self.osmPNGUrl);
 	self:GetUrl(self.osmPNGUrl,function(data,err)
-		--LOG.std(nil,"debug","GetUrl=data",data);
-		--LOG.std(nil,"debug","GetUrl=err",err);
 		if(err == 200) then
 			local file = ParaIO.open("/tile.png", "w");
 			file:write(data,#data);
