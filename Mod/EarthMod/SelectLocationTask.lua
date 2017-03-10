@@ -72,6 +72,14 @@ end, _guihelper.MessageBoxButtons.YesNo);
 
 end
 
+function SelectLocationTask.OnClickConfirm()
+	page:CloseWindow();
+end
+
+function SelectLocationTask.OnClickConcle()
+	page:CloseWindow();
+end
+
 function SelectLocationTask.setCoordinate(lat,lon)
 	SelectLocationTask.isFirstSelect = false;
 
