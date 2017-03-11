@@ -36,11 +36,20 @@ function ItemEarth:OnSelect(itemStack)
 end
 
 function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_region)
+	if(self.alreadyBlock) then
+		_guihelper.MessageBox(L"地图已生成");
+		return;
+	end
+	
+	if(self.alreadyBlock == nil) then
+		self.alreadyBlock = true;
+	end
+
 	if(SelectLocationTask.isFirstSelect) then
 		_guihelper.MessageBox(L"您还没有选择地图坐标");
 	else
-		CommandManager:RunCommand("/fog 1000");
-		CommandManager:RunCommand("/renderdist 128");
+--		CommandManager:RunCommand("/fog 1000");
+--		CommandManager:RunCommand("/renderdist 128");
 
 		local gisCommand = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
 		if(SelectLocationTask.isChange)then
@@ -70,8 +79,16 @@ function ItemEarth:OnClickInHand(itemStack, entityPlayer)
 end
 
 function ItemEarth:GoToMap()
+	self.alreadyBlock = false;
+	CommandManager:RunCommand("/gis -undo");
+
 	local url = "npl://earth";
 	GameLogic.RunCommand("/open " .. url);
+end
+
+function ItemEarth:Cancle()
+	self.alreadyBlock = false;
+	CommandManager:RunCommand("/gis -undo");
 end
 
 function ItemEarth:RefreshTask(itemStack)

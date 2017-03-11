@@ -66,63 +66,6 @@ local block_colors = {
 	{25, 22, 22,	block_types.names.Black_Wool},
 }
 
-local function drawpixel(x, y, z)
-		--LOG.std(nil,"debug","x,y,z",{x,y,z})
-		gisToBlocks:AddBlock(x,z,y,28);
-end
-
-local function drawline(x1, y1, x2, y2, z)
-	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
-	x=x1;
-	y=y1;
-	dx=math.abs(x2-x1);
-	dy=math.abs(y2-y1);
-
-	if(x2>x1) then
-		s1=1;
-	else
-		s1=-1;
-	end
-
-	if(y2 > y1) then
-		s2 = 1;
-	else
-		s2 = -1;
-	end
-
-	if(dy > dx) then
-		temp = dx;
-		dx   = dy;
-		dy   = temp;
-	    interchange = 1;
-	else
-	    interchange = 0;
-	end
-
-	p = 2*dy - dx;
-
-	for i=1,dx do
-		drawpixel(x,y,z);
-
-		if(p>=0) then
-			if(interchange==0) then
-				y = y+s2;
-			else
-				x = x+s1;
-			end
-			p = p-2*dx;
-		end
-
-		if(interchange == 0) then
-			x = x+s1; 
-		else
-			y = y+s2;
-		end
-
-		p = p+2*dy;
-	end
-end
-
 local function tile2deg(x, y, z)
     local n = 2 ^ z
     local lon_deg = x / n * 360.0 - 180.0
@@ -260,6 +203,8 @@ function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 			from_data = BlockEngine:GetBlockData(x,y,z);
 			from_entity_data = BlockEngine:GetBlockEntityData(x,y,z);
 		end
+		from_id = 0;
+		--LOG.std(nil,"debug","AddBlock",{x,y,z,block_id,from_id,from_data,from_entity_data});
 		self.history[#(self.history)+1] = {x,y,z, block_id, from_id, from_data, from_entity_data};
 	end
 	local block_template = block_types.get(block_id);
@@ -269,7 +214,66 @@ function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
 	end
 end
 
+function gisToBlocks:drawpixel(x, y, z)
+	self:AddBlock(x,z,y,28,0);
+end
+
+function gisToBlocks:drawline(x1, y1, x2, y2, z)
+	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
+	x=x1;
+	y=y1;
+	dx=math.abs(x2-x1);
+	dy=math.abs(y2-y1);
+
+	if(x2>x1) then
+		s1=1;
+	else
+		s1=-1;
+	end
+
+	if(y2 > y1) then
+		s2 = 1;
+	else
+		s2 = -1;
+	end
+
+	if(dy > dx) then
+		temp = dx;
+		dx   = dy;
+		dy   = temp;
+	    interchange = 1;
+	else
+	    interchange = 0;
+	end
+
+	p = 2*dy - dx;
+
+	for i=1,dx do
+		self:drawpixel(x,y,z);
+
+		if(p>=0) then
+			if(interchange==0) then
+				y = y+s2;
+			else
+				x = x+s1;
+			end
+			p = p-2*dx;
+		end
+
+		if(interchange == 0) then
+			x = x+s1; 
+		else
+			y = y+s2;
+		end
+
+		p = p+2*dy;
+	end
+end
+
 function gisToBlocks:OSMToBlock(vector, px, py, pz)
+	echo("OSM-----self.add_to_history");
+	echo(self.add_to_history);
+
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 
 	if (not xmlRoot) then
@@ -361,9 +365,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 					buildingB.cz    = py+1;
 
 					if (buildingA.x < buildingB.x) then
-						drawline(buildingA.cx , buildingA.cy , buildingB.cx , buildingB.cy , buildingA.cz);
+						self:drawline(buildingA.cx , buildingA.cy , buildingB.cx , buildingB.cy , buildingA.cz);
 					else
-						drawline(buildingB.cx , buildingB.cy , buildingA.cx , buildingA.cy , buildingB.cz);
+						self:drawline(buildingB.cx , buildingB.cy , buildingA.cx , buildingA.cy , buildingB.cz);
 					end
 				end
 			end
@@ -388,6 +392,7 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 			local z;
 			x, y, z = px+x, py, pz+y;
 			ParaBlockWorld.LoadRegion(block_world, x, y, z);
+
 			self:AddBlock(x, y, z, block_id, block_data);
 		end
 
@@ -410,12 +415,11 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 						if(pixel[4]~=0) then
 							-- transparent pixel does not show up. 
 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
-							LOG.std(nil,"debug","block_id, block_data",{block_id, block_data});
 							if(block_id) then
 								--LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
-								if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
+								--if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
 									CreateBlock_(x,y, block_id, block_data);
-								end
+								--end
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
 --									coroutine.yield(true);
@@ -482,22 +486,17 @@ function gisToBlocks:Undo()
 end
 
 function gisToBlocks:Run()
-	--echo(self,true);
 	self.finished = true;
 
-	if(GameLogic.GameMode:CanAddToHistory()) then
+	if(self.options == "coordinate") then
+		if(GameLogic.GameMode:CanAddToHistory()) then
 		self.add_to_history = true;
+		end
+
+		self.tileX,self.tileY = deg2tile(self.lon,self.lat,17);
+
+		self:GetData(function(raster,vector)
+			self:LoadToScene(raster,vector);
+		end);
 	end
-
-	self.tileX,self.tileY = deg2tile(self.lon,self.lat,17);
-
-	self:GetData(function(raster,vector)
-		self:LoadToScene(raster,vector);
-	end);
-
---	if(self.operation == gisToBlocks.Operations.Load) then
---		return self:LoadToScene();
---	elseif(self.operation == gisToBlocks.Operations.InMem) then
---		return self:LoadToMemory();
---	end
 end

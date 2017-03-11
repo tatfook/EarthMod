@@ -29,19 +29,26 @@ Commands["gis"] = {
 		local lat,lon;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 
-		lat, cmd_text = CmdParser.ParseString(cmd_text);
-		lon, cmd_text = CmdParser.ParseString(cmd_text);
+		if(options.coordinate) then
+			lat, cmd_text = CmdParser.ParseString(cmd_text);
+			lon, cmd_text = CmdParser.ParseString(cmd_text);
 
-		options, cmd_text = CmdParser.ParseString(cmd_text);
+			options, cmd_text = CmdParser.ParseString(cmd_text);
 
-		if(options == nil) then
-			cache = 'false';
-		else
-			cache, cmd_text = CmdParser.ParseString(cmd_text);
+			if(options == nil) then
+				cache = 'false';
+			else
+				cache, cmd_text = CmdParser.ParseString(cmd_text);
+			end
+
+			Tasks.gis = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=cache});
+			Tasks.gis:Run();
 		end
 
-		local task = Tasks.gisToBlocks:new({lat=lat,lon=lon,cache=cache});
-		
-		task:Run();
+		if(options.undo) then
+			if(Tasks.gis) then
+				Tasks.gis:Undo();
+			end
+		end
 	end,
 };

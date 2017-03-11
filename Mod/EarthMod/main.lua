@@ -41,7 +41,7 @@ end
 function EarthMod:init()
 	LOG.std(nil, "info", "EarthMod", "plugin initialized");
 
-	-- register a new block item, id < 10512 is internal items, which is not recommended to modify. 
+	-- register a new block item, id < 10513 is internal items, which is not recommended to modify. 
 	GameLogic.GetFilters():add_filter("block_types", function(xmlRoot)
 		local blocks = commonlib.XPath.selectNode(xmlRoot, "/blocks/");
 

@@ -76,7 +76,14 @@ function SelectLocationTask.OnClickConfirm()
 	page:CloseWindow();
 end
 
-function SelectLocationTask.OnClickConcle()
+function SelectLocationTask.OnClickCancel()
+	local self = SelectLocationTask.GetInstance();
+	local item = self:GetItem();
+	
+	if(item) then
+		item:Cancle();
+	end
+
 	page:CloseWindow();
 end
 
