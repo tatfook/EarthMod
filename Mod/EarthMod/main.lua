@@ -16,8 +16,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)script/apps/WebServer/WebServer.lua");
 
 local EarthMod          = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
-local gisCommand        = commonlib.gettable("Mod.gisCommand");
-local EarthSceneContext = commonlib.gettable("Mod.EarthMod.EarthSceneContext");
+local gisCommand        = commonlib.gettable("Mod.EarthMod.gisCommand");
 local CommandManager    = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
 --LOG.SetLogLevel("DEBUG");

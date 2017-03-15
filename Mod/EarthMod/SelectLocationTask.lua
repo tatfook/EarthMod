@@ -15,6 +15,7 @@ NPL.load("(gl)Mod/EarthMod/main.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
+local gisToBlocksTask    = commonlib.gettable("");
 
 SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
@@ -23,6 +24,7 @@ local curInstance;
 SelectLocationTask.isFirstSelect = true;
 -- this is always a top level task. 
 SelectLocationTask.is_top_level  = true;
+SelectLocationTask.getMoreTiles  = false;
 
 function SelectLocationTask:ctor()
 end
@@ -60,16 +62,20 @@ end
 
 function SelectLocationTask.OnClickSelectLocationScript()
 	_guihelper.MessageBox(L"点击后打开外部浏览器，点击地图选择坐标。", function(res)
-	if(res and res == _guihelper.DialogResult.Yes) then
-		local self = SelectLocationTask.GetInstance();
-		local item = self:GetItem();
+		if(res and res == _guihelper.DialogResult.Yes) then
+			local self = SelectLocationTask.GetInstance();
+			local item = self:GetItem();
 		
-		if(item) then
-			item:GoToMap();
+			if(item) then
+				item:GoToMap();
+			end
 		end
-	end
-end, _guihelper.MessageBoxButtons.YesNo);
+	end, _guihelper.MessageBoxButtons.YesNo);
 
+end
+
+function SelectLocationTask.OnClickGetMoreTiles()
+	_guihelper.MessageBox(L"开发中");
 end
 
 function SelectLocationTask.OnClickConfirm()
@@ -97,9 +103,7 @@ function SelectLocationTask.setCoordinate(lat,lon)
 	end
 
 	EarthMod:SetWorldData("coordinate",{lat=tostring(lat),lon=tostring(lon)});
-	--EarthMod:SetWorldData("testString","OKOKOK");
-	--EarthMod:SetWorldData("testNumber",123456.3333);
-	--EarthMod:SetWorldData("testBool",false);
+
 	EarthMod:SaveWorldData();
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
@@ -125,7 +129,7 @@ function SelectLocationTask:ShowPage()
 			align = "_ctb",
 			x = 0,
 			y = -55,
-			width = 356,
+			width = 470,
 			height = 100,
 		cancelShowAnimation = true,
 	});

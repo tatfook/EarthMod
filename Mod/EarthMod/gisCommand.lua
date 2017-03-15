@@ -16,6 +16,8 @@ local CmdParser      = commonlib.gettable("MyCompany.Aries.Game.CmdParser");
 local Tasks          = commonlib.gettable("MyCompany.Aries.Game.Tasks");
 local LocalTextures  = commonlib.gettable("MyCompany.Aries.Game.Materials.LocalTextures");
 
+local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
+
 local Commands       = commonlib.gettable("MyCompany.Aries.Game.Commands");
 local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
@@ -41,13 +43,19 @@ Commands["gis"] = {
 				cache, cmd_text = CmdParser.ParseString(cmd_text);
 			end
 
-			Tasks.gis = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=cache});
-			Tasks.gis:Run();
+			gisCommand.gis = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=cache});
+			gisCommand.gis:Run();
 		end
 
 		if(options.undo) then
-			if(Tasks.gis) then
-				Tasks.gis:Undo();
+			if(gisCommand.gis) then
+				gisCommand.gis:Undo();
+			end
+		end
+
+		if(options.boundary) then
+			if(gisCommand.gis) then
+				gisCommand.getMoreTiles = gisCommand.gis:BoundaryCheck();
 			end
 		end
 	end,

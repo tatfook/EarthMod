@@ -16,15 +16,21 @@ NPL.load("(gl)script/ide/Files.lua");
 local getOsmService = commonlib.gettable("Mod.EarthMod.getOsmService");
 local Encoding      = commonlib.gettable("System.Encoding");
 
-getOsmService.osmHost   = "openstreetmap.org";
-getOsmService.osmXMLUrl = "http://api."  .. getOsmService.osmHost .. "/api/0.6/map?bbox={left},{bottom},{right},{top}";
-getOsmService.osmPNGUrl = "http://tile." .. getOsmService.osmHost .. "/" .. getOsmService.zoom .. "/{x}/{y}.png";
-getOsmService.tryTimes  = 0;
+getOsmService.osmHost  = "openstreetmap.org";
+getOsmService.tryTimes = 0;
 
 function getOsmService:ctor()
 end
 
 function getOsmService:init()
+end
+
+function getOsmService.osmXMLUrl()
+	return "http://api."  .. getOsmService.osmHost .. "/api/0.6/map?bbox={left},{bottom},{right},{top}";
+end
+
+function getOsmService.osmPNGUrl()
+	return "http://tile." .. getOsmService.osmHost .. "/" .. getOsmService.zoom .. "/{x}/{y}.png";
 end
 
 function getOsmService:GetUrl(_params,_callback)
@@ -59,14 +65,14 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 end
 
 function getOsmService:getOsmXMLData(_callback)
-	self.osmXMLUrl = self.osmXMLUrl:gsub("{left}",self.dleft);
-	self.osmXMLUrl = self.osmXMLUrl:gsub("{bottom}",self.dbottom);
-	self.osmXMLUrl = self.osmXMLUrl:gsub("{right}",self.dright);
-	self.osmXMLUrl = self.osmXMLUrl:gsub("{top}",self.dtop);
+	local osmXMLUrl = getOsmService.osmXMLUrl();
 
-	LOG.std(nil,"debug","osmXMLUrl",self.osmXMLUrl);
+	osmXMLUrl = osmXMLUrl:gsub("{left}",self.dleft);
+	osmXMLUrl = osmXMLUrl:gsub("{bottom}",self.dbottom);
+	osmXMLUrl = osmXMLUrl:gsub("{right}",self.dright);
+	osmXMLUrl = osmXMLUrl:gsub("{top}",self.dtop);
 
-	self:GetUrl(self.osmXMLUrl,function(data,err)
+	self:GetUrl(osmXMLUrl,function(data,err)
 		if(err == 200) then
 			local file = ParaIO.open("/xml.osm", "w");
 			file:write(data,#data);
@@ -80,10 +86,12 @@ function getOsmService:getOsmXMLData(_callback)
 end
 
 function getOsmService:getOsmPNGData(_callback)
-	self.osmPNGUrl = self.osmPNGUrl:gsub("{x}",tostring(self.tileX));
-	self.osmPNGUrl = self.osmPNGUrl:gsub("{y}",tostring(self.tileY));
+	local osmPNGUrl = getOsmService.osmPNGUrl();
 
-	self:GetUrl(self.osmPNGUrl,function(data,err)
+	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(self.tileX));
+	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(self.tileY));
+
+	self:GetUrl(osmPNGUrl,function(data,err)
 		if(err == 200) then
 			local file = ParaIO.open("/tile.png", "w");
 			file:write(data,#data);

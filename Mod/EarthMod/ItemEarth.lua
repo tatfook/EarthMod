@@ -18,6 +18,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 local ItemBlockModel     = commonlib.gettable("MyCompany.Aries.Game.Items.ItemBlockModel");
 local ItemEarth          = commonlib.inherit(ItemBlockModel, commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth"));
 
+local gisCommand         = commonlib.gettable("Mod.EarthMod.gisCommand");
 local block_types        = commonlib.gettable("MyCompany.Aries.Game.block_types")
 local ItemStack          = commonlib.gettable("MyCompany.Aries.Game.Items.ItemStack");
 local OpenFileDialog     = commonlib.gettable("MyCompany.Aries.Game.GUI.OpenFileDialog");
@@ -51,15 +52,23 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 --		CommandManager:RunCommand("/fog 1000");
 --		CommandManager:RunCommand("/renderdist 128");
 
-		local gisCommand = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
+		local gisCommandText = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
 		if(SelectLocationTask.isChange)then
 			SelectLocationTask.isChange = false;
-			gisCommand = gisCommand .. " -cache true";
+			gisCommandText = gisCommandText .. " -cache true";
 		else
-			gisCommand = gisCommand .. " -cache false";
+			gisCommandText = gisCommandText .. " -cache false";
 		end
 
-		CommandManager:RunCommand(gisCommand);
+		CommandManager:RunCommand(gisCommandText);
+
+		BoundaryTimer = BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
+			CommandManager:RunCommand("/gis -boundary");
+			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
+			SelectLocationTask:RefreshPage();
+		end});
+
+		BoundaryTimer:Change(300, 300);
 	end
 
 	return;
