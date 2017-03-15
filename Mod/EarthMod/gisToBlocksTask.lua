@@ -1,4 +1,4 @@
---[[
+﻿--[[
 Title: convert any gis to blocks
 Author(s): big
 Date: 2017/1/24
@@ -26,7 +26,7 @@ local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
 local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types");
 local names           = commonlib.gettable("MyCompany.Aries.Game.block_types.names");
 local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager");
-local DownloadService = commonlib.gettable("Mod.EarthMod.DownloadService");
+local getOsmService   = commonlib.gettable("Mod.EarthMod.getOsmService");
 local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
 local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
@@ -45,6 +45,7 @@ gisToBlocks.operation = gisToBlocks.Operations.Load;
 gisToBlocks.concurrent_creation_point_count = 1;
 -- the color schema. can be 1, 2, 16. where 1 is only a single color. 
 gisToBlocks.colors = 32;
+gisToBlocks.zoom   = 17;
 
 --RGB, block_id
 local block_colors = {
@@ -92,6 +93,14 @@ local function deg2pixel(lon, lat, zoom)
     return xtile, ytile
 end
 
+local function pixel2deg(tileX,tileY,pixelX,pixelY,zoom)
+	local n = 2 ^ zoom;
+	local lon_deg = (tileX + pixelX/256) / n * 360.0 - 180.0;
+	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/256) / n)))
+	local lat_deg = lat_rad * 180.0 / math.pi
+	return tostring(lon_deg), tostring(lat_deg)
+end
+
 -- Calculates distance between two RGB colors
 local function GetColorDist(colorRGB, blockRGB)
 	return math.max(math.abs(colorRGB[1]-blockRGB[1]), math.abs(colorRGB[2]-blockRGB[2]), math.abs(colorRGB[3]-blockRGB[3]));
@@ -126,32 +135,6 @@ local function FindClosetBlockColor(pixelRGB)
 		end
 	end
 	return block_colors[smallestDistIndex];
-end
-
-function gisToBlocks:ctor()
-	self.step = 1;
-	self.history = {};
-end
-
-function gisToBlocks:GetData(_callback)
-	local raster,vector;
-
-	if(self.cache == 'true') then
-		DownloadService:getOsmPNGData(self.lat,self.lon,function(raster)
-			DownloadService:getOsmXMLData(function(vector)
-				raster = ParaIO.open("tile.png", "image");
-				_callback(raster,vector);
-			end);
-		end);
-	else
-		raster = ParaIO.open("tile.png", "image");
-
-		local vectorFile = ParaIO.open("xml.osm", "r");
-		vector           = vectorFile:GetText(0, -1);
-		vectorFile:close();
-
-		_callback(raster,vector);
-	end
 end
 
 -- @param pixel: {r,g,b,a}
@@ -195,85 +178,91 @@ local function GetBlockIdFromPixel(pixel, colors)
 	end
 end
 
-function gisToBlocks:AddBlock(x,y,z, block_id, block_data)
+function gisToBlocks:ctor()
+	self.step = 1;
+	self.history = {};
+	my_timer = my_timer or commonlib.Timer:new({callbackFunc = gisToBlocks.OnTimer});
+	my_timer:Change(300, 300);
+end
+
+function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
 	if(self.add_to_history) then
-		local from_id = BlockEngine:GetBlockId(x,y,z);
+		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
+
 		if(from_id and from_id>0) then
-			from_data = BlockEngine:GetBlockData(x,y,z);
-			from_entity_data = BlockEngine:GetBlockEntityData(x,y,z);
+			from_data = BlockEngine:GetBlockData(spx,spy,spz);
+			from_entity_data = BlockEngine:GetBlockEntityData(spx,spy,spz);
 		end
+
 		from_id = 0;
 		--LOG.std(nil,"debug","AddBlock",{x,y,z,block_id,from_id,from_data,from_entity_data});
-		self.history[#(self.history)+1] = {x,y,z, block_id, from_id, from_data, from_entity_data};
+		self.history[#(self.history)+1] = {spx,spy,spz, block_id, from_id, from_data, from_entity_data};
 	end
 	local block_template = block_types.get(block_id);
 
 	if(block_template) then
-		block_template:Create(x,y,z, false, block_data);
+		block_template:Create(spx,spy,spz, false, block_data);
 	end
 end
 
-function gisToBlocks:drawpixel(x, y, z)
-	self:AddBlock(x,z,y,28,0);
+function gisToBlocks:drawpixel(cx, cy, cz)
+	self:AddBlock(cx,cz,cy,28,0);
 end
 
-function gisToBlocks:drawline(x1, y1, x2, y2, z)
+function gisToBlocks:drawline(cx1, cy1, cx2, cy2, cz)
 	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
-	x=x1;
-	y=y1;
-	dx=math.abs(x2-x1);
-	dy=math.abs(y2-y1);
+	cx=cx1;
+	cy=cy1;
+	dcx=math.abs(cx2-cx1);
+	dcy=math.abs(cy2-cy1);
 
-	if(x2>x1) then
+	if(cx2>cx1) then
 		s1=1;
 	else
 		s1=-1;
 	end
 
-	if(y2 > y1) then
+	if(cy2 > cy1) then
 		s2 = 1;
 	else
 		s2 = -1;
 	end
 
-	if(dy > dx) then
-		temp = dx;
-		dx   = dy;
-		dy   = temp;
+	if(dcy > dcx) then
+		temp = dcx;
+		dcx   = dcy;
+		dcy   = temp;
 	    interchange = 1;
 	else
 	    interchange = 0;
 	end
 
-	p = 2*dy - dx;
+	p = 2*dcy - dcx;
 
-	for i=1,dx do
-		self:drawpixel(x,y,z);
+	for i=1,dcx do
+		self:drawpixel(cx,cy,cz);
 
 		if(p>=0) then
 			if(interchange==0) then
-				y = y+s2;
+				cy = cy+s2;
 			else
-				x = x+s1;
+				cx = cx+s1;
 			end
-			p = p-2*dx;
+			p = p-2*dcx;
 		end
 
 		if(interchange == 0) then
-			x = x+s1; 
+			cx = cx+s1; 
 		else
-			y = y+s2;
+			cy = cy+s2;
 		end
 
-		p = p+2*dy;
+		p = p+2*dcy;
 	end
 end
 
 function gisToBlocks:OSMToBlock(vector, px, py, pz)
-	echo("OSM-----self.add_to_history");
-	echo(self.add_to_history);
-
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 
 	if (not xmlRoot) then
@@ -355,13 +344,13 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 			if (length > 3) then
 				for i = 1, length - 1 do
 					local buildingA = buildingPointList[i];
-					buildingA.cx    = px + math.ceil(buildingA.x/factor);
-					buildingA.cy    = pz - math.ceil(buildingA.y/factor) + PNGSize;
+					buildingA.cx    = px + math.ceil(buildingA.x/factor) - (256/2);
+					buildingA.cy    = pz - math.ceil(buildingA.y/factor) + PNGSize - (256/2);
 					buildingA.cz    = py+1;
 
 					local buildingB = buildingPointList[i + 1];
-					buildingB.cx    = px + math.ceil(buildingB.x/factor);
-					buildingB.cy    = pz - math.ceil(buildingB.y/factor) + PNGSize;
+					buildingB.cx    = px + math.ceil(buildingB.x/factor) - (256/2);
+					buildingB.cy    = pz - math.ceil(buildingB.y/factor) + PNGSize - (256/2);
 					buildingB.cz    = py+1;
 
 					if (buildingA.x < buildingB.x) then
@@ -388,12 +377,12 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 
 		local block_world = GameLogic.GetBlockWorld();
 
-		local function CreateBlock_(x, y, block_id, block_data)
+		local function CreateBlock_(ix, iy, block_id, block_data)
 			local z;
-			x, y, z = px+x, py, pz+y;
-			ParaBlockWorld.LoadRegion(block_world, x, y, z);
+			spx, spy, spz = px+ix-(256/2), py, pz+iy-(256/2);
+			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 
-			self:AddBlock(x, y, z, block_id, block_data);
+			self:AddBlock(spx, spy, spz, block_id, block_data);
 		end
 
 		--array of {r,g,b,a}
@@ -409,8 +398,8 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 			end
 
 --			local worker_thread_co = coroutine.create(function ()
-				for y=1, width do
-					for x=1, height do
+				for iy=1, width do
+					for ix=1, height do
 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
 						if(pixel[4]~=0) then
 							-- transparent pixel does not show up. 
@@ -418,7 +407,7 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 							if(block_id) then
 								--LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
 								--if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
-									CreateBlock_(x,y, block_id, block_data);
+									CreateBlock_(ix,iy, block_id, block_data);
 								--end
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
@@ -455,7 +444,14 @@ end
 function gisToBlocks:LoadToScene(raster,vector)
 	local colors = self.colors;
 
-	local px, py, pz = EntityManager.GetFocus():GetBlockPos();	
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	
+	gisToBlocks.ptop    = pz + 128;
+	gisToBlocks.pbottom = pz - 128;
+	gisToBlocks.pleft   = px - 128;
+	gisToBlocks.pright  = px + 128;
+
+--	echo({self.top,self.bottom,self.left,self.right});
 
 	if(not px) then
 		return
@@ -463,6 +459,28 @@ function gisToBlocks:LoadToScene(raster,vector)
 	
 	self:PNGToBlock(raster, px, py, pz);
 	self:OSMToBlock(vector, px, py, pz);
+end
+
+function gisToBlocks:GetData(_callback)
+	local raster,vector;
+
+	if(self.cache == 'true') then
+		getOsmService:getOsmPNGData(function(raster)
+			getOsmService:getOsmXMLData(function(vector)
+				raster = ParaIO.open("tile.png", "image");
+				_callback(raster,vector);
+			end);
+		end);
+	else
+		local vectorFile;
+
+		raster     = ParaIO.open("tile.png", "image");
+	    vectorFile = ParaIO.open("xml.osm", "r");
+		vector     = vectorFile:GetText(0, -1);
+		vectorFile:close();
+
+		_callback(raster,vector);
+	end
 end
 
 function gisToBlocks:FrameMove()
@@ -485,15 +503,55 @@ function gisToBlocks:Undo()
 	end
 end
 
+function gisToBlocks.OnTimer(timer)
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	
+	local function notice()
+		GameLogic.SetStatus(L"超出");
+	end
+
+	local abslat = math.abs(gisToBlocks.dleft - gisToBlocks.dright);
+	local abslon = math.abs(gisToBlocks.dtop  - gisToBlocks.dbottom);
+
+	if(gisToBlocks.pleft and px <= gisToBlocks.pleft) then
+		notice();
+		echo(self.dleft - abslat);
+	end
+
+	if(gisToBlocks.pright and px >= gisToBlocks.pright) then
+		notice();
+		echo(self.dright - abslat);
+	end
+
+	if(gisToBlocks.pbottom and pz <= gisToBlocks.pbottom) then
+		notice();
+		echo(self.dbottom - abslon);
+	end
+
+	if(gisToBlocks.ptop and pz >= gisToBlocks.ptop) then
+		notice();
+		echo(self.dtop - abslon);
+	end
+end
+
 function gisToBlocks:Run()
 	self.finished = true;
 
 	if(self.options == "coordinate") then
 		if(GameLogic.GameMode:CanAddToHistory()) then
-		self.add_to_history = true;
+			self.add_to_history = true;
 		end
 
-		self.tileX,self.tileY = deg2tile(self.lon,self.lat,17);
+		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.lon,self.lat,self.zoom);
+		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
+		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
+
+		getOsmService.tileX   = gisToBlocks.tileX;
+		getOsmService.tileY   = gisToBlocks.tileY;
+		getOsmService.dleft   = gisToBlocks.dleft;
+		getOsmService.dtop    = gisToBlocks.dtop;
+		getOsmService.dright  = gisToBlocks.dright;
+		getOsmService.dbottom = gisToBlocks.dbottom;
 
 		self:GetData(function(raster,vector)
 			self:LoadToScene(raster,vector);

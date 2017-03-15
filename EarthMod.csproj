@@ -77,7 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="InstallPackages.bat" />
-    <None Include="Mod\EarthMod\DownloadService.lua" />
+    <None Include="Mod\EarthMod\getOsmService.lua" />
     <None Include="Mod\EarthMod\SelectLocationTask.lua" />
     <None Include="README.md" />
     <None Include="Run.bat" />
