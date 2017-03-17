@@ -15,9 +15,9 @@ NPL.load("(gl)Mod/EarthMod/ItemEarth.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)script/apps/WebServer/WebServer.lua");
 
-local EarthMod          = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
-local gisCommand        = commonlib.gettable("Mod.EarthMod.gisCommand");
-local CommandManager    = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
+local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
+local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
+local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
@@ -64,8 +64,6 @@ function EarthMod:init()
 		end
 		return xmlRoot;
 	end)
-
-	--EarthSceneContext:ApplyToDefaultContext();
 end
 
 function EarthMod:OnLogin()
@@ -75,6 +73,10 @@ end
 
 function EarthMod:OnWorldLoad()
 	LOG.std(nil, "info", "EarthMod", "OnNewWorld");
+
+	if(EarthMod:GetWorldData("alreadyBlock")) then
+		CommandManager:RunCommand("/take 10513");
+	end
 end
 -- called when a world is unloaded. 
 

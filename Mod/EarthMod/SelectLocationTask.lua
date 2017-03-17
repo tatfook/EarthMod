@@ -15,7 +15,6 @@ NPL.load("(gl)Mod/EarthMod/main.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
-local gisToBlocksTask    = commonlib.gettable("");
 
 SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
@@ -71,11 +70,19 @@ function SelectLocationTask.OnClickSelectLocationScript()
 			end
 		end
 	end, _guihelper.MessageBoxButtons.YesNo);
-
 end
 
 function SelectLocationTask.OnClickGetMoreTiles()
-	_guihelper.MessageBox(L"开发中");
+	_guihelper.MessageBox(L"是否确定生成此区域？", function(res)
+		if(res and res == _guihelper.DialogResult.Yes) then
+			local self = SelectLocationTask.GetInstance();
+			local item = self:GetItem();
+		
+			if(item) then
+				item:MoreScence();
+			end
+		end
+	end, _guihelper.MessageBoxButtons.YesNo);
 end
 
 function SelectLocationTask.OnClickConfirm()
@@ -103,8 +110,8 @@ function SelectLocationTask.setCoordinate(lat,lon)
 	end
 
 	EarthMod:SetWorldData("coordinate",{lat=tostring(lat),lon=tostring(lon)});
+	--EarthMod:SaveWorldData();
 
-	EarthMod:SaveWorldData();
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
 	
@@ -140,9 +147,6 @@ function SelectLocationTask:Run()
 	self.finished = false;
 
 	local coordinate = EarthMod:GetWorldData("coordinate");
-	--local testString = EarthMod:GetWorldData("testString");
-	--local testNumber = EarthMod:GetWorldData("testNumber");
-	--local testBool   = EarthMod:GetWorldData("testBool");
 
 	if(coordinate) then
 		SelectLocationTask.isFirstSelect = false;

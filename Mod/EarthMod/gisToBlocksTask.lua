@@ -12,6 +12,7 @@ local task = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=c
 task:Run();
 -------------------------------------------------------
 ]]
+NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/ide/System/Core/Color.lua");
@@ -29,6 +30,7 @@ local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager");
 local getOsmService   = commonlib.gettable("Mod.EarthMod.getOsmService");
 local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
 local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
+local EarthMod        = commonlib.gettable("Mod.EarthMod");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -439,33 +441,50 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 	end
 end
 
+function gisToBlocks:MoreScene()
+	echo("MoreScene");
+	self:GetData(function(raster,vector)
+--		self:LoadToScene(raster,vector);
+--
+--		self:PNGToBlock(raster, px, py, pz);
+--		self:OSMToBlock(vector, px, py, pz);
+	end);
+end
+
 function gisToBlocks:LoadToScene(raster,vector)
 	local colors = self.colors;
 
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	
+
+	if(not px) then
+		return;
+	end
+
 	gisToBlocks.ptop    = pz + 128;
 	gisToBlocks.pbottom = pz - 128;
 	gisToBlocks.pleft   = px - 128;
 	gisToBlocks.pright  = px + 128;
 
---	echo({self.top,self.bottom,self.left,self.right});
-
-	if(not px) then
-		return
-	end
+	EarthMod:SetWorldData("boundary",{ptop    = gisToBlocks.ptop,
+									  pbottom = gisToBlocks.pbottom,
+									  pleft   = gisToBlocks.pleft,
+									  pright  = gisToBlocks.pright});
+	EarthMod:SaveWorldData();
 	
 	self:PNGToBlock(raster, px, py, pz);
 	self:OSMToBlock(vector, px, py, pz);
+	CommandManager:RunCommand("/save");
 end
 
 function gisToBlocks:GetData(_callback)
 	local raster,vector;
-	echo(getOsmService,true);
+	
 	if(self.cache == 'true') then
+		GameLogic.SetStatus(L"下载数据中");
 		getOsmService:getOsmPNGData(function(raster)
 			getOsmService:getOsmXMLData(function(vector)
 				raster = ParaIO.open("tile.png", "image");
+				GameLogic.SetStatus(L"下载成功");
 				_callback(raster,vector);
 			end);
 		end);
@@ -520,72 +539,73 @@ function gisToBlocks:BoundaryCheck()
 	--lefttop
 	if(gisToBlocks.pleft and gisToBlocks.ptop and px <= gisToBlocks.pleft and pz >= gisToBlocks.ptop) then
 		common(L"左上边");
-		local lefttoplat = gisToBlocks.dleft - abslat;
-		local lefttoplon = gisToBlocks.dtop + abslat;
-		LOG.std(nil,"debug","lefttoplat,lefttoplon",{lefttoplat,lefttoplon});
+		gisToBlocks.lefttoplat = gisToBlocks.dleft - abslat;
+		gisToBlocks.lefttoplon = gisToBlocks.dtop + abslat;
+		LOG.std(nil,"debug","lefttoplat,lefttoplon",{gisToBlocks.lefttoplat,gisToBlocks.lefttoplon});
 		return true;
 	end
 
 	--righttop
 	if(gisToBlocks.pright and gisToBlocks.ptop and px >= gisToBlocks.pright and pz >= gisToBlocks.ptop) then
 		common(L"右上边");
-		local righttoplat = gisToBlocks.dright + abslat;
-		local righttoplon = gisToBlocks.dtop + abslon;
-		LOG.std(nil,"debug","rightttoplat,righttoplon",{righttoplat,righttoplon});
+		gisToBlocks.righttoplat = gisToBlocks.dright + abslat;
+		gisToBlocks.righttoplon = gisToBlocks.dtop + abslon;
+		LOG.std(nil,"debug","rightttoplat,righttoplon",{gisToBlocks.righttoplat,gisToBlocks.righttoplon});
 		return true;
 	end
 
 	--leftbottom
 	if(gisToBlocks.pleft and gisToBlocks.pbottom and px <= gisToBlocks.pleft and pz <= gisToBlocks.pbottom) then
 		common(L"左下边");
-		local leftbottomlat = gisToBlocks.dleft - abslat;
-		local leftbottomlon = gisToBlocks.dbottom - abslon;
-		LOG.std(nil,"debug","leftbottomlat,leftbottomlon",{leftbottomlat,leftbottomlon});
+		gisToBlocks.leftbottomlat = gisToBlocks.dleft - abslat;
+		gisToBlocks.leftbottomlon = gisToBlocks.dbottom - abslon;
+		LOG.std(nil,"debug","leftbottomlat,leftbottomlon",{gisToBlocks.leftbottomlat,gisToBlocks.leftbottomlon});
 		return true;
 	end
 
 	--rightbottom
 	if(gisToBlocks.pright and gisToBlocks.pbottom and px >= gisToBlocks.pright and pz <= gisToBlocks.pbottom) then
 		common(L"右下边");
-		local rightbottomlat = gisToBlocks.dright + abslat;
-		local rightbottomlon = gisToBlocks.dbottom - abslon;
-		LOG.std(nil,"debug","rightbottomlat,rightbottomlon",{rightbottomlat,rightbottomlon});
+		gisToBlocks.rightbottomlat = gisToBlocks.dright + abslat;
+		gisToBlocks.rightbottomlon = gisToBlocks.dbottom - abslon;
+		LOG.std(nil,"debug","rightbottomlat,rightbottomlon",{gisToBlocks.rightbottomlat,gisToBlocks.rightbottomlon});
 		return true;
 	end
 
 	--leftside
 	if(gisToBlocks.pleft and px <= gisToBlocks.pleft) then
 		common(L"左边");
-		local leftlat = gisToBlocks.dleft - abslat;
-		local leftlon = gisToBlocks.dtop - abslon;
-		LOG.std(nil,"debug","leftlat,leftlon",{leftlat,leftlon});
+		gisToBlocks.leftlat = gisToBlocks.dleft - abslat;
+		gisToBlocks.leftlon = gisToBlocks.dtop - abslon;
+		LOG.std(nil,"debug","leftlat,leftlon",{gisToBlocks.leftlat,gisToBlocks.leftlon});
 		return true;
 	end
 	
 	--rightside
 	if(gisToBlocks.pright and px >= gisToBlocks.pright) then
+		LOG.std(nil,"debug","px,gisToBlocks.pright",{px,gisToBlocks.pright});
 		common(L"右边");
-		local rightlat = gisToBlocks.dright + abslat;
-		local rightlon = gisToBlocks.dtop - abslon;
-		LOG.std(nil,"debug","rightlat,rightlon",{rightlat,rightlon});
+		gisToBlocks.rightlat = gisToBlocks.dright + abslat;
+		gisToBlocks.rightlon = gisToBlocks.dtop - abslon;
+		LOG.std(nil,"debug","rightlat,rightlon",{gisToBlocks.rightlat,gisToBlocks.rightlon});
 		return true;
 	end
 
 	--bottomside
 	if(gisToBlocks.pbottom and pz <= gisToBlocks.pbottom) then
 		common(L"下边");
-		local bottomlat = gisToBlocks.dright - abslat;   
-		local bottomlon = gisToBlocks.dbottom - abslon;
-		LOG.std(nil,"debug","bottomlat,bottomlon",{bottomlat,bottomlon});
+		gisToBlocks.bottomlat = gisToBlocks.dright - abslat;   
+		gisToBlocks.bottomlon = gisToBlocks.dbottom - abslon;
+		LOG.std(nil,"debug","bottomlat,bottomlon",{gisToBlocks.bottomlat,gisToBlocks.bottomlon});
 		return true;
 	end
 
 	--topsile
 	if(gisToBlocks.ptop and pz >= gisToBlocks.ptop) then
 		common(L"上边");
-		local toplat = gisToBlocks.dright - abslat;
-		local toplon = gisToBlocks.dtop + abslon;
-		LOG.std(nil,"debug","toplat,toplon",{toplat,toplon});
+		gisToBlocks.toplat = gisToBlocks.dright - abslat;
+		gisToBlocks.toplon = gisToBlocks.dtop + abslon;
+		LOG.std(nil,"debug","toplat,toplon",{gisToBlocks.toplat,gisToBlocks.toplon});
 		return true;
 	end
 
@@ -595,11 +615,7 @@ end
 function gisToBlocks:Run()
 	self.finished = true;
 
-	if(self.options == "coordinate") then
-		if(GameLogic.GameMode:CanAddToHistory()) then
-			self.add_to_history = true;
-		end
-
+	if(self.options == "already" or self.options == "coordinate") then
 		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.lon,self.lat,self.zoom);
 		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
 		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
@@ -611,6 +627,20 @@ function gisToBlocks:Run()
 		getOsmService.dright  = gisToBlocks.dright;
 		getOsmService.dbottom = gisToBlocks.dbottom;
 		getOsmService.zoom    = self.zoom;
+
+		if(self.options == "already") then
+			local boundary = EarthMod:GetWorldData("boundary");
+			gisToBlocks.ptop    = boundary.ptop;
+			gisToBlocks.pbottom = boundary.pbottom;
+			gisToBlocks.pleft   = boundary.pleft;
+			gisToBlocks.pright  = boundary.pright;
+		end
+	end
+
+	if(self.options == "coordinate") then
+		if(GameLogic.GameMode:CanAddToHistory()) then
+			self.add_to_history = true;
+		end
 
 		self:GetData(function(raster,vector)
 			self:LoadToScene(raster,vector);

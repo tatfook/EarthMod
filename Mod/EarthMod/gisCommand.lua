@@ -30,6 +30,15 @@ Commands["gis"] = {
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		local lat,lon;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
+		echo(options);
+		if(options.already) then
+			lat, cmd_text = CmdParser.ParseString(cmd_text);
+			lon, cmd_text = CmdParser.ParseString(cmd_text);
+
+			gisCommand.gis = Tasks.gisToBlocks:new({options="already",lat=lat,lon=lon});
+			gisCommand.gis:Run();
+			return;
+		end
 
 		if(options.coordinate) then
 			lat, cmd_text = CmdParser.ParseString(cmd_text);
@@ -45,17 +54,26 @@ Commands["gis"] = {
 
 			gisCommand.gis = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=cache});
 			gisCommand.gis:Run();
+			return;
 		end
 
 		if(options.undo) then
 			if(gisCommand.gis) then
 				gisCommand.gis:Undo();
 			end
+			return;
 		end
 
 		if(options.boundary) then
 			if(gisCommand.gis) then
 				gisCommand.getMoreTiles = gisCommand.gis:BoundaryCheck();
+			end
+			return;
+		end
+
+		if(options.more) then
+			if(gisCommand.gis) then
+				gisCommand.gis:MoreScene();
 			end
 		end
 	end,

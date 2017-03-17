@@ -16,8 +16,9 @@ NPL.load("(gl)script/ide/Files.lua");
 local getOsmService = commonlib.gettable("Mod.EarthMod.getOsmService");
 local Encoding      = commonlib.gettable("System.Encoding");
 
-getOsmService.osmHost  = "openstreetmap.org";
-getOsmService.tryTimes = 0;
+getOsmService.osmHost   = "openstreetmap.org";
+getOsmService.tryTimes  = 0;
+getOsmService.worldName = GameLogic.GetWorldDirectory();
 
 function getOsmService:ctor()
 end
@@ -65,6 +66,7 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 end
 
 function getOsmService:getOsmXMLData(_callback)
+	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
 	local osmXMLUrl = getOsmService.osmXMLUrl();
 
 	osmXMLUrl = osmXMLUrl:gsub("{left}",self.dleft);
@@ -86,6 +88,7 @@ function getOsmService:getOsmXMLData(_callback)
 end
 
 function getOsmService:getOsmPNGData(_callback)
+	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
 	local osmPNGUrl = getOsmService.osmPNGUrl();
 
 	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(self.tileX));
