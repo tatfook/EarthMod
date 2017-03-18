@@ -23,36 +23,38 @@ local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager")
 
 Commands["gis"] = {
 	name="gis", 
-	quick_ref="/gis [-croodinate] [lat] [lng] [-cache] [true/false]",
+	quick_ref="/gis [-coordinate] [lat] [lng] [-cache] [true/false]",
 	desc=[[
 		
 	]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		local lat,lon;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
-		echo(options);
-		if(options.already) then
+		--LOG.std(nil,"debug","options",options);
+
+		if(options.already or options.coordinate) then
 			lat, cmd_text = CmdParser.ParseString(cmd_text);
 			lon, cmd_text = CmdParser.ParseString(cmd_text);
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options="already",lat=lat,lon=lon});
-			gisCommand.gis:Run();
-			return;
-		end
+			LOG.std(nil,"debug","lat,lon",{lat,lon});
 
-		if(options.coordinate) then
-			lat, cmd_text = CmdParser.ParseString(cmd_text);
-			lon, cmd_text = CmdParser.ParseString(cmd_text);
-
-			options, cmd_text = CmdParser.ParseString(cmd_text);
-
-			if(options == nil) then
-				cache = 'false';
-			else
-				cache, cmd_text = CmdParser.ParseString(cmd_text);
+			if(options.already) then
+				optionsType = "already";
+			elseif(options.coordinate) then
+				optionsType = "coordinate";
 			end
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=cache});
+			options, cmd_text = CmdParser.ParseOptions(cmd_text);
+
+			--echo(options);
+
+			if(options.cache) then
+				cache, cmd_text = CmdParser.ParseString(cmd_text);
+			else
+				cache = 'false';
+			end
+
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,lat=lat,lon=lon,cache=cache});
 			gisCommand.gis:Run();
 			return;
 		end
@@ -73,6 +75,15 @@ Commands["gis"] = {
 
 		if(options.more) then
 			if(gisCommand.gis) then
+				options, cmd_text = CmdParser.ParseOptions(cmd_text);
+
+				if(options) then
+					cache, cmd_text = CmdParser.ParseString(cmd_text);
+				else
+					cache = 'false';
+				end
+
+				gisCommand.gis.cache = cache;
 				gisCommand.gis:MoreScene();
 			end
 		end

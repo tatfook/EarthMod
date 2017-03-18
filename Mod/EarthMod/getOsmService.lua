@@ -65,14 +65,14 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 	end
 end
 
-function getOsmService:getOsmXMLData(_callback)
+function getOsmService:getOsmXMLData(dleft,dbottom,dright,dtop,_callback)
 	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
 	local osmXMLUrl = getOsmService.osmXMLUrl();
 
-	osmXMLUrl = osmXMLUrl:gsub("{left}",self.dleft);
-	osmXMLUrl = osmXMLUrl:gsub("{bottom}",self.dbottom);
-	osmXMLUrl = osmXMLUrl:gsub("{right}",self.dright);
-	osmXMLUrl = osmXMLUrl:gsub("{top}",self.dtop);
+	osmXMLUrl = osmXMLUrl:gsub("{left}",dleft);
+	osmXMLUrl = osmXMLUrl:gsub("{bottom}",dbottom);
+	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
+	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
 
 	self:GetUrl(osmXMLUrl,function(data,err)
 		if(err == 200) then
@@ -87,12 +87,12 @@ function getOsmService:getOsmXMLData(_callback)
 	end);
 end
 
-function getOsmService:getOsmPNGData(_callback)
+function getOsmService:getOsmPNGData(tileX,tileY,_callback)
 	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
 	local osmPNGUrl = getOsmService.osmPNGUrl();
 
-	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(self.tileX));
-	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(self.tileY));
+	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(tileX));
+	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(tileY));
 
 	self:GetUrl(osmPNGUrl,function(data,err)
 		if(err == 200) then

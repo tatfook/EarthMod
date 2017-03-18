@@ -88,7 +88,7 @@ end
 function ItemEarth:boundaryCheck()
 	BoundaryTimer = BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
 			CommandManager:RunCommand("/gis -boundary");
-			echo(gisCommand.getMoreTiles);
+			--echo(gisCommand.getMoreTiles);
 			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
 			SelectLocationTask:RefreshPage();
 		end});
@@ -97,7 +97,7 @@ function ItemEarth:boundaryCheck()
 end
 
 function ItemEarth:MoreScence()
-	CommandManager:RunCommand("/gis -more");
+	CommandManager:RunCommand("/gis -more -cache true");
 end
 
 function ItemEarth:OnDeSelect()
