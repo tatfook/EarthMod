@@ -100,7 +100,7 @@ local function pixel2deg(tileX,tileY,pixelX,pixelY,zoom)
 	local lon_deg = (tileX + pixelX/256) / n * 360.0 - 180.0;
 	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/256) / n)))
 	local lat_deg = lat_rad * 180.0 / math.pi
-	return tostring(lon_deg), tostring(lat_deg)
+	return tostring(lon_deg), tostring(lat_deg);
 end
 
 -- Calculates distance between two RGB colors
@@ -264,6 +264,19 @@ end
 
 function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
+	local tileX,tileY;
+
+	if(self.options == "coordinate") then
+		echo("coordinate");
+		tileX = self.home.tileX;
+		tileY = self.home.tileY;
+	elseif(self.options == "already")then
+		echo("already");
+		tileX = self.more.tileX;
+		tileY = self.more.tileY;
+	end
+
+	LOG.std(nil,"debug","tileX,tileY",{tileX,tileY});
 
 	if (not xmlRoot) then
 		LOG.std(nil, "info", "ParseOSM", "Failed loading OSM");
@@ -302,14 +315,14 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 					for i=1, #osmNodeList do
 						local item = osmNodeList[i];
 						if (item.id == ndnode.attr.ref) then
-							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, 17);
-							if (cur_tilex == self.tileX) and (cur_tiley == self.tileY) then
+							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+							if (cur_tilex == tileX) and (cur_tiley == tileY) then
 								
 								--local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
 								--LOG.std(nil, "info", "found building node:", str);
 
 								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
-								xpos, ypos = deg2pixel(item.lon, item.lat, 17);
+								xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
 
 								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
 								buildingPointCount = buildingPointCount + 1;
@@ -442,79 +455,94 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 end
 
 function gisToBlocks:MoreScene()
-	LOG.std(nil,"debug","direction",gisToBlocks.direction);
-	LOG.std(nil,"debug","{dleft,dtop,dright.dbottom}",{gisToBlocks.dleft,gisToBlocks.dtop,gisToBlocks.dright,gisToBlocks.dbottom});
-
 	self.options = "already";
-	echo(self.options);
+	self.more    = {};
+	local absCoordinate = EarthMod:GetWorldData("absCoordinate");
+	local px, py, pz    = EntityManager.GetFocus():GetBlockPos();
 
-	local abslat = math.abs(gisToBlocks.dleft - gisToBlocks.dright)/2;
-	local abslon = math.abs(gisToBlocks.dtop  - gisToBlocks.dbottom)/2;
+	local pright, pleft, pright, pleft, layerX, layerZ, morePx, morePz, distanceX, distanceZ;
+	if(px > (self.home.px + 128)) then
+		pright     = self.home.px + 128;
+		distanceX  = math.abs(px - pright);
+		layerX     = math.ceil(distanceX/256);
+		morePx     = pright + (layerX * 256) - 128;
 
-	echo(tostring(abslat));
-	echo(tostring(abslon));
+		self.home.dright = self.home.lat + (absCoordinate.lat/2);
+		self.more.dright = self.home.dright + (absCoordinate.lat * layerX);
+		self.more.dleft	 = self.home.dright + (absCoordinate.lat * (layerX - 1));
+	elseif(px < (self.home.px-128)) then
+		pleft      = self.home.px - 128;
+		distanceX  = math.abs(px - pleft);
+		layerX     = math.ceil(distanceX/256);
+		morePx     = pleft - (layerX * 256) + 128;
 
-	local direction = gisToBlocks.direction;
-
-	if(direction == "top") then
-		px, py, pz = gisToBlocks.pleft + 128, 5 , gisToBlocks.ptop + 128;
-		gisToBlocks.morelat = gisToBlocks.dright - abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
+		self.home.dleft  = self.home.lat - (absCoordinate.lat/2);
+		self.more.dright = self.home.dleft - (absCoordinate.lat * (layerX - 1));
+		self.more.dleft  = self.home.dleft - (absCoordinate.lat * layerX);
 	end
 
-	if(direction == "bottom") then
-		px, py, pz = gisToBlocks.pleft + 128 , 5 , gisToBlocks.pbottom - 128;
-		gisToBlocks.morelat = gisToBlocks.dright - abslat;   
-		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
+	if(pz > (self.home.pz + 128)) then
+		ptop      = self.home.pz + 128;
+		distanceZ = math.abs(pz - ptop);
+		layerZ    = math.ceil(distanceZ/256);
+		morePz    = ptop + (layerZ * 256) - 128;
+
+		self.home.dtop    = self.home.lon + (absCoordinate.lon/2);
+		self.more.dtop    = self.home.dtop + (absCoordinate.lon * layerZ);
+		self.more.dbottom = self.home.dtop + (absCoordinate.lon * (layerZ - 1));
+	elseif(pz < (self.home.pz - 128)) then
+		pbottom   = self.home.pz - 128;
+		distanceZ = math.abs(pz - pbottom);
+		layerZ    = math.ceil(distanceZ/256);
+		morePz    = pbottom - (layerZ * 256) + 128;
+
+		self.home.dbottom = self.home.lon - (absCoordinate.lon/2);
+		self.more.dtop    = self.home.dbottom - (absCoordinate.lon * (layerZ - 1));
+		self.more.dbottom = self.home.dbottom - (absCoordinate.lon * layerZ);
 	end
 
-	if(direction == "left") then
-		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop - 128;
-		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
+	if(distanceX == 0 and distanceZ == 0) then
+		LOG.std(nil,"error","error position");
+		return;
 	end
 
-	if(direction == "right") then
-		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop - 128;
-		gisToBlocks.morelat = gisToBlocks.dright + abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
+	LOG.std(nil,"debug","morePx,morePz",{morePx,morePz});
+
+	if(morePx == nil) then
+		morePx = self.home.px;
+		self.more.dleft = self.home.lat - (absCoordinate.lat/2);
+		self.more.dright = self.home.lat + (absCoordinate.lat/2);
 	end
 
-	if(direction == "lefttop") then
-		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop + 128;
-		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop + abslat;
+	if(morePz == nil) then
+		morePz = self.home.pz;
+		self.more.dtop = self.home.lon + (absCoordinate.lon/2);
+		self.more.dbottom = self.home.lon - (absCoordinate.lon/2);
 	end
 
-	if(direction == "righttop") then
-		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop + 128;
-		gisToBlocks.morelat = gisToBlocks.dright + abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
-	end
+	LOG.std(nil,"debug","dtop,dbottom,dleft,dright",{self.more.dtop,self.more.dbottom,self.more.dleft,self.more.dright});
 
-	if(direction == "leftbottom") then
-		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.pbottom - 128;
-		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
-		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
-	end
+	local morePy = 5;
 
-	if(direction == "rightbottom") then
-		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.pbottom - 128;
-		gisToBlocks.morelat = gisToBlocks.dright + abslat;
-		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
-	end
+	echo(morePx);
+	echo(morePz);
 
-	gisToBlocks.mTileX,gisToBlocks.mTileY = deg2tile(gisToBlocks.morelat,gisToBlocks.morelon,self.zoom);
+	local moreLat = self.more.dright - (absCoordinate.lat/2);
+	local moreLon = self.more.dtop - (absCoordinate.lon/2);
 
-	gisToBlocks.mdleft , gisToBlocks.mdtop    = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,0,0,self.zoom);
-	gisToBlocks.mdright, gisToBlocks.mdbottom = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,255,255,self.zoom);
+	self.more.tileX, self.more.tileY = deg2tile(moreLat, moreLon, self.zoom);
 
-	echo({px,py,pz});
-	LOG.std(nil,"debug","morelat,morelon",{gisToBlocks.morelat,gisToBlocks.morelon});
-
+	LOG.std(nil,"debug","moreLat,moreLon",{moreLat, moreLon});
+	LOG.std(nil,"debug","self.cache",self.cache);
 	self:GetData(function(raster,vector)
-		self:PNGToBlock(raster, px, py, pz);
-		self:OSMToBlock(vector, px, py, pz);
+		self:PNGToBlock(raster, morePx, morePy, morePz);
+		self:OSMToBlock(vector, morePx, morePy, morePz);
+
+		local allBoundary = EarthMod:GetWorldData("boundary");
+		LOG.std(nil,"debug","allBoundary",allBoundary);
+		allBoundary[#allBoundary +1 ] = {ptop = morePz + 128, pbottom = morePz - 128, pleft = morePx - 128, pright = morePx + 128};
+		LOG.std(nil,"debug","allBoundary",allBoundary);
+		EarthMod:SetWorldData("boundary",allBoundary);
 	end);
 end
 
@@ -527,20 +555,16 @@ function gisToBlocks:LoadToScene(raster,vector)
 		return;
 	end
 
-	gisToBlocks.ptop    = pz + 128;
-	gisToBlocks.pbottom = pz - 128;
-	gisToBlocks.pleft   = px - 128;
-	gisToBlocks.pright  = px + 128;
+	local homeBoundary = {ptop = pz + 128, pbottom = pz - 128, pleft = px - 128, pright = px + 128};
 
-	EarthMod:SetWorldData("boundary",{ptop    = gisToBlocks.ptop,
-									  pbottom = gisToBlocks.pbottom,
-									  pleft   = gisToBlocks.pleft,
-									  pright  = gisToBlocks.pright});
-	EarthMod:SaveWorldData();
+	EarthMod:SetWorldData("homePosition",{px = px, py = py, pz = pz});
+	EarthMod:SetWorldData("boundary",{homeBoundary});
 	
 	self:PNGToBlock(raster, px, py, pz);
 	self:OSMToBlock(vector, px, py, pz);
+
 	CommandManager:RunCommand("/save");
+	EarthMod:SaveWorldData();
 end
 
 function gisToBlocks:GetData(_callback)
@@ -548,27 +572,27 @@ function gisToBlocks:GetData(_callback)
 	local tileX,tileY;
 	local dtop,dbottom,dleft,dright;
 	
-	if(self.options == "already") then
-		tileX = gisToBlocks.mTileX;
-		tileY = gisToBlocks.mTileY;
-		
-		dtop    = gisToBlocks.mdtop;
-		dbottom = gisToBlocks.mdbottom;
-		dleft   = gisToBlocks.mdleft;
-		dright  = gisToBlocks.mdright;
-
-		--LOG.std(nil,"debug","tileX,tileY,dtop,dbottom,dleft,dright",{tileX,tileY,dtop,dbottom,dleft,dright});
-	end
-
 	if(self.options == "coordinate") then
-		tileX = gisToBlocks.tileX;
-		tileY = gisToBlocks.tileY;
+		tileX = self.home.tileX;
+		tileY = self.home.tileY;
 
-		dtop    = gisToBlocks.dtop;
-		dbottom = gisToBlocks.dbottom;
-		dleft   = gisToBlocks.dleft;
-		dright  = gisToBlocks.dright;
+		dtop    = self.home.dtop;
+		dbottom = self.home.dbottom;
+		dleft   = self.home.dleft;
+		dright  = self.home.dright;
 	end
+
+	if(self.options == "already") then
+		tileX = self.more.tileX;
+		tileY = self.more.tileY;
+		
+		dtop    = self.more.dtop;
+		dbottom = self.more.dbottom;
+		dleft   = self.more.dleft;
+		dright  = self.more.dright;
+	end
+
+	LOG.std(nil,"debug","tileX,tileY,dtop,dbottom,dleft,dright",{tileX,tileY,dtop,dbottom,dleft,dright});
 
 	if(self.cache == 'true') then
 		GameLogic.SetStatus(L"下载数据中");
@@ -613,91 +637,47 @@ end
 
 function gisToBlocks:BoundaryCheck()
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	
-	local function common(words)
-		GameLogic.SetStatus(words);
+
+	local function common(text)
+		GameLogic.SetStatus(text);
 	end
 
-	--lefttop
-	if(gisToBlocks.pleft and gisToBlocks.ptop and px <= gisToBlocks.pleft and pz >= gisToBlocks.ptop) then
-		common(L"左上边");
-		gisToBlocks.direction = "lefttop";
-		return true;
+	local allBoundary = EarthMod:GetWorldData("boundary");
+
+	local exceeding = true;
+	for key, boundary in pairs(allBoundary) do
+		if(px <= boundary.pright and px >= boundary.pleft and pz <= boundary.ptop and pz >= boundary.pbottom) then
+			--common(L"未超出");
+			exceeding = false;
+			break;
+		end
 	end
 
-	--righttop
-	if(gisToBlocks.pright and gisToBlocks.ptop and px >= gisToBlocks.pright and pz >= gisToBlocks.ptop) then
-		common(L"右上边");
-		gisToBlocks.direction = "righttop";
-		return true;
-	end
-
-	--leftbottom
-	if(gisToBlocks.pleft and gisToBlocks.pbottom and px <= gisToBlocks.pleft and pz <= gisToBlocks.pbottom) then
-		common(L"左下边");
-		gisToBlocks.direction = "leftbottom";
-		return true;
-	end
-
-	--rightbottom
-	if(gisToBlocks.pright and gisToBlocks.pbottom and px >= gisToBlocks.pright and pz <= gisToBlocks.pbottom) then
-		common(L"右下边");
-		gisToBlocks.direction = "rightbottom";
-		return true;
-	end
-
-	--leftside
-	if(gisToBlocks.pleft and px <= gisToBlocks.pleft) then
-		common(L"左边");
-		gisToBlocks.direction = "left";
-		return true;
-	end
-	
-	--rightside
-	if(gisToBlocks.pright and px >= gisToBlocks.pright) then
-		common(L"右边");
-		gisToBlocks.direction = "right";
-		return true;
-	end
-
-	--bottomside
-	if(gisToBlocks.pbottom and pz <= gisToBlocks.pbottom) then
-		common(L"下边");
-		gisToBlocks.direction = "bottom";
-		return true;
-	end
-
-	--topsile
-	if(gisToBlocks.ptop and pz >= gisToBlocks.ptop) then
-		common(L"上边");
-		gisToBlocks.direction = "top";
-		return true;
-	end
-
-	return false
+	return exceeding;
 end
 
 function gisToBlocks:Run()
 	self.finished = true;
 
-	if(self.options == "already" or self.options == "coordinate") then
-		LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
-		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.lon,self.lat,self.zoom);
-		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
-		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
-		
-		getOsmService.zoom = self.zoom;
-		
-		if(self.options == "already") then
-			local boundary = EarthMod:GetWorldData("boundary");
-			gisToBlocks.ptop    = boundary.ptop;
-			gisToBlocks.pbottom = boundary.pbottom;
-			gisToBlocks.pleft   = boundary.pleft;
-			gisToBlocks.pright  = boundary.pright;
-		end
-	end
+	getOsmService.zoom = self.zoom;
 
 	if(self.options == "coordinate") then
+		--LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
+		self.home = {};
+		self.home.tileX , self.home.tileY = deg2tile(self.lon,self.lat,self.zoom);
+		
+		self.home.dleft , self.home.dtop    = pixel2deg(self.home.tileX,self.home.tileY,0,0,self.zoom);
+		self.home.dright, self.home.dbottom = pixel2deg(self.home.tileX,self.home.tileY,255,255,self.zoom);
+		
+		local abslat  = math.abs(self.home.dleft - self.home.dright);
+		local abslon  = math.abs(self.home.dtop  - self.home.dbottom);
+		local homelat = self.home.dleft + (abslat/2);
+		local homelon = self.home.dtop  - (abslon/2);
+
+		EarthMod:SetWorldData("selectCoordinate", {lat = tostring(self.lon), lon = tostring(self.lon)});
+		EarthMod:SetWorldData("homeCoordinate", {lat = tostring(homelat), lon = tostring(homelon)});
+		EarthMod:SetWorldData("absCoordinate", {lat = tostring(abslat), lon = tostring(abslon)});
+
 		if(GameLogic.GameMode:CanAddToHistory()) then
 			self.add_to_history = true;
 		end
@@ -705,5 +685,17 @@ function gisToBlocks:Run()
 		self:GetData(function(raster,vector)
 			self:LoadToScene(raster,vector);
 		end);
+	end
+
+	if(self.options == "already") then
+		local homePosition   = EarthMod:GetWorldData("homePosition");
+		local homeCoordinate = EarthMod:GetWorldData("homeCoordinate");
+
+		self.home = {};
+		self.home.lat = homeCoordinate.lat;
+		self.home.lon = homeCoordinate.lon;
+		self.home.px  = homePosition.px;
+		self.home.py  = homePosition.py;
+		self.home.pz  = homePosition.pz;
 	end
 end

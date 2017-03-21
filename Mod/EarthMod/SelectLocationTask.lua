@@ -109,9 +109,6 @@ function SelectLocationTask.setCoordinate(lat,lon)
 		SelectLocationTask.lon      = lon;
 	end
 
-	EarthMod:SetWorldData("coordinate",{lat=tostring(lat),lon=tostring(lon)});
-	--EarthMod:SaveWorldData();
-
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
 	
@@ -146,7 +143,7 @@ function SelectLocationTask:Run()
 	curInstance = self;
 	self.finished = false;
 
-	local coordinate = EarthMod:GetWorldData("coordinate");
+	local coordinate = EarthMod:GetWorldData("selectCoordinate");
 
 	if(coordinate) then
 		SelectLocationTask.isFirstSelect = false;

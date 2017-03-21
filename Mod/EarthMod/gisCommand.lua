@@ -30,23 +30,13 @@ Commands["gis"] = {
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		local lat,lon;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
-		--LOG.std(nil,"debug","options",options);
+		--LOG.std(nil,"debug","cmd_text",cmd_text);
 
-		if(options.already or options.coordinate) then
+		if(options.coordinate) then
 			lat, cmd_text = CmdParser.ParseString(cmd_text);
 			lon, cmd_text = CmdParser.ParseString(cmd_text);
 
-			LOG.std(nil,"debug","lat,lon",{lat,lon});
-
-			if(options.already) then
-				optionsType = "already";
-			elseif(options.coordinate) then
-				optionsType = "coordinate";
-			end
-
 			options, cmd_text = CmdParser.ParseOptions(cmd_text);
-
-			--echo(options);
 
 			if(options.cache) then
 				cache, cmd_text = CmdParser.ParseString(cmd_text);
@@ -54,7 +44,13 @@ Commands["gis"] = {
 				cache = 'false';
 			end
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,lat=lat,lon=lon,cache=cache});
+			gisCommand.gis = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=cache});
+			gisCommand.gis:Run();
+			return;
+		end
+
+		if(options.already)then
+			gisCommand.gis = Tasks.gisToBlocks:new({options="already"});
 			gisCommand.gis:Run();
 			return;
 		end
@@ -74,10 +70,12 @@ Commands["gis"] = {
 		end
 
 		if(options.more) then
-			if(gisCommand.gis) then
+			more, cmd_text = CmdParser.ParseString(cmd_text);
+
+			if(more == "true" and gisCommand.gis) then
 				options, cmd_text = CmdParser.ParseOptions(cmd_text);
 
-				if(options) then
+				if(options.cache) then
 					cache, cmd_text = CmdParser.ParseString(cmd_text);
 				else
 					cache = 'false';

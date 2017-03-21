@@ -38,20 +38,19 @@ function ItemEarth:OnSelect(itemStack)
 	GameLogic.SetStatus(L"点击下方按钮选择地图坐标");
 
 	if(EarthMod:GetWorldData("alreadyBlock")) then
-		LOG.std(nil,"debug","SelectLocationTask.lat",SelectLocationTask.lat);
-		CommandManager:RunCommand("/gis -already " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon);
+		CommandManager:RunCommand("/gis -already");
 		self:boundaryCheck();
 	end
 end
 
 function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_region)
 	if(SelectLocationTask.isFirstSelect) then
-		_guihelper.MessageBox(L"您还没有选择地图坐标");
+		_guihelper.MessageBox(L"您还没有选择地图初始坐标");
 		return;
 	end
 
 	if(EarthMod:GetWorldData("alreadyBlock")) then
-		_guihelper.MessageBox(L"地图已生成");
+		--_guihelper.MessageBox(L"地图已生成");
 		return;
 	end
 	
@@ -59,8 +58,8 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 		EarthMod:SetWorldData("alreadyBlock",true);
 	end
 
-	--CommandManager:RunCommand("/fog 1000");
-	--CommandManager:RunCommand("/renderdist 128");
+	CommandManager:RunCommand("/fog 5000");
+	CommandManager:RunCommand("/renderdist 256");
 
 	local gisCommandText = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
 	
@@ -97,7 +96,7 @@ function ItemEarth:boundaryCheck()
 end
 
 function ItemEarth:MoreScence()
-	CommandManager:RunCommand("/gis -more -cache true");
+	CommandManager:RunCommand("/gis -more true -cache true");
 end
 
 function ItemEarth:OnDeSelect()

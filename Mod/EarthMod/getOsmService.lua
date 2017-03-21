@@ -16,7 +16,7 @@ NPL.load("(gl)script/ide/Files.lua");
 local getOsmService = commonlib.gettable("Mod.EarthMod.getOsmService");
 local Encoding      = commonlib.gettable("System.Encoding");
 
-getOsmService.osmHost   = "openstreetmap.org";
+getOsmService.osmHost   = "osm.org";
 getOsmService.tryTimes  = 0;
 getOsmService.worldName = GameLogic.GetWorldDirectory();
 
@@ -73,7 +73,7 @@ function getOsmService:getOsmXMLData(dleft,dbottom,dright,dtop,_callback)
 	osmXMLUrl = osmXMLUrl:gsub("{bottom}",dbottom);
 	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
 	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
-
+	LOG.std(nil,"debug","osmXMLUrl",osmXMLUrl);
 	self:GetUrl(osmXMLUrl,function(data,err)
 		if(err == 200) then
 			local file = ParaIO.open("/xml.osm", "w");
@@ -90,10 +90,10 @@ end
 function getOsmService:getOsmPNGData(tileX,tileY,_callback)
 	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
 	local osmPNGUrl = getOsmService.osmPNGUrl();
-
+	
 	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(tileX));
 	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(tileY));
-
+	LOG.std(nil,"debug","osmPNGUrl",osmPNGUrl);
 	self:GetUrl(osmPNGUrl,function(data,err)
 		if(err == 200) then
 			local file = ParaIO.open("/tile.png", "w");
