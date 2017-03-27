@@ -90,9 +90,9 @@ local function deg2pixel(lon, lat, zoom)
     local n = 2 ^ zoom
     local lon_deg = tonumber(lon)
     local lat_rad = math.rad(lat)
-    local xtile = math.floor(n * ((lon_deg + 180) / 360) * 256 % 256 + 0.5)
-    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * 256 % 256 + 0.5)
-    return xtile, ytile
+    local x = math.floor(n * ((lon_deg + 180) / 360) * 256 % 256 + 0.5)
+    local y = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * 256 % 256 + 0.5)
+    return x, y
 end
 
 local function pixel2deg(tileX,tileY,pixelX,pixelY,zoom)
@@ -206,11 +206,32 @@ function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
 	end
 end
 
-function gisToBlocks:drawpixel(cx, cy, cz)
-	self:AddBlock(cx,cz,cy,28,0);
+function gisToBlocks:drawpixel(cx, cy, cz, z, blockId, type)
+	local function floor(self)
+		if(type == "building") then
+			for i = 1, 3 do
+				self:AddBlock(cx,cz,cy,blockId,0);
+				cz = cz + 1;
+			end
+		else
+			self:AddBlock(cx,cz,cy,blockId,0);
+		end
+	end
+
+	if(z == nil or z <= 1) then
+		floor(self);
+	else
+		for i = 1, z  do
+			floor(self);
+		end
+	end
 end
 
-function gisToBlocks:drawline(cx1, cy1, cx2, cy2, cz)
+function gisToBlocks:floodFillScanline()
+	
+end
+
+function gisToBlocks:drawline(cx1, cy1, cx2, cy2, cz, z, blockId, type)
 	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
 	cx=cx1;
 	cy=cy1;
@@ -241,7 +262,7 @@ function gisToBlocks:drawline(cx1, cy1, cx2, cy2, cz)
 	p = 2*dcy - dcx;
 
 	for i=1,dcx do
-		self:drawpixel(cx,cy,cz);
+		self:drawpixel(cx, cy, cz, z, blockId, type);
 
 		if(p>=0) then
 			if(interchange==0) then
@@ -267,11 +288,11 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	local tileX,tileY;
 
 	if(self.options == "coordinate") then
-		echo("coordinate");
+		--echo("coordinate");
 		tileX = self.home.tileX;
 		tileY = self.home.tileY;
 	elseif(self.options == "already")then
-		echo("already");
+		--echo("already");
 		tileX = self.more.tileX;
 		tileY = self.more.tileY;
 	end
@@ -295,85 +316,247 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 		count = count + 1;
 	end
 
-	local osmBuildingList = {}
+	local osmBuildingList  = {}
 	local osmBuildingCount = 0;
 
-	local waynode;
+	local osmHighWayList   = {};
+	local osmHighWayCount  = 0;
+
 	for waynode in commonlib.XPath.eachNode(osmnode, "/way") do
-	    local found = false; --only find one building nodes
-
-		local tagnode;
 		for tagnode in commonlib.XPath.eachNode(waynode, "/tag") do	
-			if (tagnode.attr.k == "building") then
+			local buildingLevel = 0;
+			if(tagnode.attr.k == "building:levels") then
+				buildingLevel = tagnode.attr.v;
+			end
 
-				local buildingPointList = {};
+			if(tagnode.attr.k == "building") then
+				local buildingPoint;
+				local buildingPointList  = {};
 				local buildingPointCount = 0;
 
-				--find node belong to building tag way <nd ref="1765621163"/>
-				local ndnode;
 				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 			
 					for i=1, #osmNodeList do
 						local item = osmNodeList[i];
 						if (item.id == ndnode.attr.ref) then
 							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
 							if (cur_tilex == tileX) and (cur_tiley == tileY) then
-								
-								--local str = item.id..","..item.lat..","..item.lon.." -> "..tostring(xpos)..","..tostring(ypos);
-								--LOG.std(nil, "info", "found building node:", str);
-
-								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
 								xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
 
-								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
+								buildingPoint      = {id = item.id, x = xpos, y = ypos, z = buildingLevel};
 								buildingPointCount = buildingPointCount + 1;
+
 								buildingPointList[buildingPointCount] = buildingPoint;
 							end					
 						end
 				    end
 			    end
 
-				osmBuilding = {id = waynode.id, points = buildingPointList};
-				--LOG.std(nil, "info", "osmBuilding", osmBuilding);
+				local osmBuilding;
+
+				osmBuilding		 = {id = waynode.id, points = buildingPointList};
 				osmBuildingCount = osmBuildingCount + 1;
+
 				osmBuildingList[osmBuildingCount] = osmBuilding;
-				
-				found = true;
+			end
+
+			if (tagnode.attr.k == "highway") then
+				local highWayPoint;
+				local highWayPointList  = {};
+				local highWayPointCount = 0;
+
+				for ndnode in commonlib.XPath.eachNode(waynode, "/nd") do 			
+					for i=1, #osmNodeList do
+						local item = osmNodeList[i];
+						if (item.id == ndnode.attr.ref) then
+							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+							if (cur_tilex == tileX) and (cur_tiley == tileY) then
+								xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
+
+								highWayPoint	   = {id = item.id, x = xpos, y = ypos};
+								highWayPointCount  = highWayPointCount + 1;
+
+								highWayPointList[highWayPointCount] = highWayPoint;
+							end
+						end
+				    end
+			    end
+
+				local osmHighWay;
+
+				osmHighWay      = {id = waynode.id, points = highWayPointList};
+				osmHighWayCount = osmHighWayCount + 1;
+				osmHighWayList[osmHighWayCount] = osmHighWay;
 			end
 		end
-
-	    if (found) then
-	        --break;
-	    end
 	end
 
-	local factor = 1;
-	local PNGSize = math.ceil(256/factor);
+	local function draw2Point(self,PointList,blockId,type)
+		local factor = 1;
+		local PNGSize = math.ceil(256*factor);
+		local pointA,pointB;
 
-	for k,v in pairs(osmBuildingList) do
-		buildingPointList = v.points;
+		if (PointList) then
+			local length = #PointList;
 
-		if (buildingPointList) then
-			local length = #buildingPointList;
 			if (length > 3) then
 				for i = 1, length - 1 do
-					local buildingA = buildingPointList[i];
-					buildingA.cx    = px + math.ceil(buildingA.x/factor) - (256/2);
-					buildingA.cy    = pz - math.ceil(buildingA.y/factor) + PNGSize - (256/2);
-					buildingA.cz    = py+1;
+					pointA = PointList[i];
+					pointB = PointList[i + 1];
 
-					local buildingB = buildingPointList[i + 1];
-					buildingB.cx    = px + math.ceil(buildingB.x/factor) - (256/2);
-					buildingB.cy    = pz - math.ceil(buildingB.y/factor) + PNGSize - (256/2);
-					buildingB.cz    = py+1;
+					pointA.cx = px + math.ceil(pointA.x*factor) - PNGSize/2;
+					pointA.cy = pz - math.ceil(pointA.y*factor) + PNGSize - PNGSize/2;
+					pointA.cz = py + 1;
 
-					if (buildingA.x < buildingB.x) then
-						self:drawline(buildingA.cx , buildingA.cy , buildingB.cx , buildingB.cy , buildingA.cz);
+					pointB.cx = px + math.ceil(pointB.x*factor) - PNGSize/2;
+					pointB.cy = pz - math.ceil(pointB.y*factor) + PNGSize - PNGSize/2;
+					pointB.cz = py + 1;
+
+					if (pointA.x < pointB.x) then
+						self:drawline(pointA.cx, pointA.cy, pointB.cx, pointB.cy, pointA.cz, pointA.z, blockId, type);
 					else
-						self:drawline(buildingB.cx , buildingB.cy , buildingA.cx , buildingA.cy , buildingB.cz);
+						self:drawline(pointB.cx, pointB.cy, pointA.cx, pointA.cy, pointB.cz, pointB.z, blockId, type);
 					end
 				end
 			end
 		end
+	end
+
+	local function draw2area(self,PointList,blockId)
+		if (PointList) then
+			local point = {left = PointList[1].cx, right = PointList[1].cx, top = PointList[1].cy, bottom = PointList[1].cy};
+			local currentPoint;
+
+			local length = #PointList;
+
+			if (length > 3) then
+				for k,v in pairs(PointList) do
+					currentPoint = PointList[k];
+
+					--get right point
+					if(currentPoint.cx < point.left) then
+						point.left  = currentPoint.cx;
+					end
+
+					--get left point
+					if(currentPoint.cx > point.right) then
+						point.right = currentPoint.cx;
+					end
+
+					--get top point
+					if(currentPoint.cy > point.top) then
+						point.top    = currentPoint.cy;
+					end
+
+					--get bottom point
+					if(currentPoint.cy < point.bottom) then
+						point.bottom = currentPoint.cy;
+					end
+
+					echo({k,v});
+				end
+			end
+
+			local startPoint = {cx = point.left, cy = point.bottom, cz = 6};
+			local endPoint   = {cx = point.right, cy = point.top, cz = 6};
+
+			currentPoint = {};
+			LOG.std(nil,"debug","currentPoint",currentPoint);
+			LOG.std(nil,"debug","startPoint",startPoint);
+			LOG.std(nil,"debug","endPoint",endPoint);
+
+			currentPoint = commonlib.copy(startPoint);
+
+			LOG.std(nil,"debug","currentPoint",currentPoint);
+
+			local linePoint = {};
+
+			if(currentPoint.cy)then
+				while(currentPoint.cx <= endPoint.cx) do
+					local loopY = commonlib.copy(currentPoint.cy);
+					local currentblockId;
+					local lastblockId
+
+					while(loopY <= endPoint.cy) do
+						local currentBlockId = BlockEngine:GetBlockId(currentPoint.cx,currentPoint.cz,loopY);
+						local count = 0;
+
+						if(currentBlockId == 0) then
+							local judgeX = commonlib.copy(currentPoint.cx);
+							while(judgeX <= endPoint.cx) do
+								local judgeXBlockId = BlockEngine:GetBlockId(judgeX,currentPoint.cz,loopY);
+
+								if(judgeXBlockId ~= 0) then
+									count = count + 1;
+									break;
+								end
+
+								judgeX = judgeX + 1;
+							end
+
+							local judgeX = commonlib.copy(currentPoint.cx);
+							while(judgeX >= startPoint.cx) do
+								local judgeXBlockId = BlockEngine:GetBlockId(judgeX,currentPoint.cz,loopY);
+
+								if(judgeXBlockId ~= 0) then
+									count = count + 1;
+									break;
+								end
+
+								judgeX = judgeX - 1;
+							end
+
+							local judgeY = commonlib.copy(loopY);
+							while(judgeY <= endPoint.cy) do
+								local judgeXBlockId = BlockEngine:GetBlockId(currentPoint.cx,currentPoint.cz,judgeY);
+
+								if(judgeXBlockId ~= 0) then
+									count = count + 1;
+									break;
+								end
+
+								judgeY = judgeY + 1;
+							end
+
+							local judgeY = commonlib.copy(loopY);
+							while(judgeY >= startPoint.cy) do
+								local judgeXBlockId = BlockEngine:GetBlockId(currentPoint.cx,currentPoint.cz,judgeY);
+
+								if(judgeXBlockId ~= 0) then
+									count = count + 1;
+									break;
+								end
+
+								judgeY = judgeY - 1;
+							end
+
+							echo({currentPoint,count});
+
+							if(count == 4) then
+								self:AddBlock(currentPoint.cx,currentPoint.cz+2,loopY,blockId,0);
+							end
+						end
+
+						loopY = loopY + 1;
+					end
+					currentPoint.cx = currentPoint.cx + 1;
+				end
+			end
+		end
+	end
+
+	local buildingPointList;
+	for k,v in pairs(osmBuildingList) do
+		buildingPointList = v.points;
+		
+		draw2Point(self,buildingPointList,51,"building");
+		draw2area(self,buildingPointList,51);
+	end
+
+	local highWayPointList;
+	for k,v in pairs(osmHighWayList) do
+		highWayPointList = v.points;
+
+		draw2Point(self,highWayPointList,56,"highWay");
 	end
 end
 
@@ -386,7 +569,7 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 		local width         = raster:ReadInt();
 		local height        = raster:ReadInt();
 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
-		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
+		--LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
 		local block_world = GameLogic.GetBlockWorld();
 
@@ -550,7 +733,7 @@ function gisToBlocks:LoadToScene(raster,vector)
 	local colors = self.colors;
 
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-
+	LOG.std(nil,"debug","px,py,pz",{px,py,pz});
 	if(not px) then
 		return;
 	end
@@ -563,7 +746,11 @@ function gisToBlocks:LoadToScene(raster,vector)
 	self:PNGToBlock(raster, px, py, pz);
 	self:OSMToBlock(vector, px, py, pz);
 
-	CommandManager:RunCommand("/save");
+	self.home.px = px;
+	self.home.py = py;
+	self.home.pz = pz;
+
+	--CommandManager:RunCommand("/save");
 	EarthMod:SaveWorldData();
 end
 
@@ -638,6 +825,8 @@ end
 function gisToBlocks:BoundaryCheck()
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 
+	--echo(BlockEngine:GetBlockId(px, py - 1, pz));
+
 	local function common(text)
 		GameLogic.SetStatus(text);
 	end
@@ -645,11 +834,14 @@ function gisToBlocks:BoundaryCheck()
 	local allBoundary = EarthMod:GetWorldData("boundary");
 
 	local exceeding = true;
-	for key, boundary in pairs(allBoundary) do
-		if(px <= boundary.pright and px >= boundary.pleft and pz <= boundary.ptop and pz >= boundary.pbottom) then
-			--common(L"未超出");
-			exceeding = false;
-			break;
+
+	if(allBoundary) then
+		for key, boundary in pairs(allBoundary) do
+			if(px <= boundary.pright and px >= boundary.pleft and pz <= boundary.ptop and pz >= boundary.pbottom) then
+				--common(L"未超出");
+				exceeding = false;
+				break;
+			end
 		end
 	end
 
@@ -658,6 +850,10 @@ end
 
 function gisToBlocks:Run()
 	self.finished = true;
+
+	if(GameLogic.GameMode:CanAddToHistory()) then
+		self.add_to_history = false;
+	end
 
 	getOsmService.zoom = self.zoom;
 
@@ -671,16 +867,13 @@ function gisToBlocks:Run()
 		
 		local abslat  = math.abs(self.home.dleft - self.home.dright);
 		local abslon  = math.abs(self.home.dtop  - self.home.dbottom);
-		local homelat = self.home.dleft + (abslat/2);
-		local homelon = self.home.dtop  - (abslon/2);
+		
+		self.home.lat = self.home.dleft + (abslat/2);
+		self.home.lon = self.home.dtop  - (abslon/2);
 
-		EarthMod:SetWorldData("selectCoordinate", {lat = tostring(self.lon), lon = tostring(self.lon)});
-		EarthMod:SetWorldData("homeCoordinate", {lat = tostring(homelat), lon = tostring(homelon)});
+		EarthMod:SetWorldData("selectCoordinate", {lat = tostring(self.lat), lon = tostring(self.lon)});
+		EarthMod:SetWorldData("homeCoordinate", {lat = tostring(self.home.lat), lon = tostring(self.home.lon)});
 		EarthMod:SetWorldData("absCoordinate", {lat = tostring(abslat), lon = tostring(abslon)});
-
-		if(GameLogic.GameMode:CanAddToHistory()) then
-			self.add_to_history = true;
-		end
 
 		self:GetData(function(raster,vector)
 			self:LoadToScene(raster,vector);
@@ -690,6 +883,8 @@ function gisToBlocks:Run()
 	if(self.options == "already") then
 		local homePosition   = EarthMod:GetWorldData("homePosition");
 		local homeCoordinate = EarthMod:GetWorldData("homeCoordinate");
+
+		LOG.std(nil,"debug","homePosition",homePosition);
 
 		self.home = {};
 		self.home.lat = homeCoordinate.lat;

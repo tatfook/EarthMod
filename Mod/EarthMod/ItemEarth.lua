@@ -37,6 +37,9 @@ function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super.OnSelect(self,itemStack);
 	GameLogic.SetStatus(L"点击下方按钮选择地图坐标");
 
+	CommandManager:RunCommand("/fog 100000");
+	CommandManager:RunCommand("/renderdist 512");
+
 	if(EarthMod:GetWorldData("alreadyBlock")) then
 		CommandManager:RunCommand("/gis -already");
 		self:boundaryCheck();
@@ -49,29 +52,29 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 		return;
 	end
 
-	if(EarthMod:GetWorldData("alreadyBlock")) then
-		--_guihelper.MessageBox(L"地图已生成");
+	--self.alreadyBlock = EarthMod:GetWorldData("alreadyBlock");
+
+	if(self.alreadyBlock) then
+		_guihelper.MessageBox(L"地图已生成");
 		return;
 	end
 	
-	if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
-		EarthMod:SetWorldData("alreadyBlock",true);
+	if(self.alreadyBlock == nil or self.alreadyBlock == false) then
+		self.alreadyBlock = true;
+		--EarthMod:SetWorldData("alreadyBlock",true);
 	end
-
-	CommandManager:RunCommand("/fog 5000");
-	CommandManager:RunCommand("/renderdist 256");
 
 	local gisCommandText = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
 	
 	if(SelectLocationTask.isChange)then
 		SelectLocationTask.isChange = false;
-		gisCommandText = gisCommandText .. " -cache true";
+		gisCommandText = gisCommandText .. " -cache false";
 	else
 		gisCommandText = gisCommandText .. " -cache false";
 	end
 
 	CommandManager:RunCommand(gisCommandText);
-	self:boundaryCheck();
+	--self:boundaryCheck();
 end
 
 -- return true if items are the same. 

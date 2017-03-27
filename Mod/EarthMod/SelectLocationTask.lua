@@ -144,7 +144,7 @@ function SelectLocationTask:Run()
 	self.finished = false;
 
 	local coordinate = EarthMod:GetWorldData("selectCoordinate");
-
+	LOG.std(nil,"debug","coordinate",coordinate);
 	if(coordinate) then
 		SelectLocationTask.isFirstSelect = false;
 		SelectLocationTask.isChage       = false;
