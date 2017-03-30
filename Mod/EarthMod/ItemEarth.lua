@@ -52,29 +52,29 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 		return;
 	end
 
-	--self.alreadyBlock = EarthMod:GetWorldData("alreadyBlock");
+	self.alreadyBlock = EarthMod:GetWorldData("alreadyBlock");
 
 	if(self.alreadyBlock) then
-		_guihelper.MessageBox(L"地图已生成");
+		--_guihelper.MessageBox(L"地图已生成");
 		return;
 	end
 	
 	if(self.alreadyBlock == nil or self.alreadyBlock == false) then
 		self.alreadyBlock = true;
-		--EarthMod:SetWorldData("alreadyBlock",true);
+		EarthMod:SetWorldData("alreadyBlock",true);
 	end
 
 	local gisCommandText = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
 	
 	if(SelectLocationTask.isChange)then
 		SelectLocationTask.isChange = false;
-		gisCommandText = gisCommandText .. " -cache false";
+		gisCommandText = gisCommandText .. " -cache true";
 	else
 		gisCommandText = gisCommandText .. " -cache false";
 	end
 
 	CommandManager:RunCommand(gisCommandText);
-	--self:boundaryCheck();
+	self:boundaryCheck();
 end
 
 -- return true if items are the same. 
@@ -92,7 +92,11 @@ function ItemEarth:boundaryCheck()
 			CommandManager:RunCommand("/gis -boundary");
 			--echo(gisCommand.getMoreTiles);
 			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
-			SelectLocationTask:RefreshPage();
+
+			if(SelectLocationTask.lastGetMoreTiles ~= SelectLocationTask.getMoreTiles) then
+				SelectLocationTask:RefreshPage();
+				SelectLocationTask.lastGetMoreTiles = SelectLocationTask.getMoreTiles;
+			end
 		end});
 
 	BoundaryTimer:Change(300, 300);
