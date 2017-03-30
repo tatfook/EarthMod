@@ -37,8 +37,8 @@ function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super.OnSelect(self,itemStack);
 	GameLogic.SetStatus(L"点击下方按钮选择地图坐标");
 
-	CommandManager:RunCommand("/fog 100000");
-	CommandManager:RunCommand("/renderdist 512");
+	CommandManager:RunCommand("/fog 10000000000");
+	CommandManager:RunCommand("/renderdist 1024");
 
 	if(EarthMod:GetWorldData("alreadyBlock")) then
 		CommandManager:RunCommand("/gis -already");

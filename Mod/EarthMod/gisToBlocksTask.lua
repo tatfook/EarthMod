@@ -207,64 +207,30 @@ end
 --	end
 --end
 
-function gisToBlocks:drawpixel(cx, cy, cz, blockId)
-	BlockEngine:SetBlock(cx,cz,cy,blockId,0);
+function gisToBlocks:drawpixel(x, y, z, blockId)
+	BlockEngine:SetBlock(x,z,y,blockId,0);
 end
 
 function gisToBlocks:floodFillScanline()
 	
 end
 
-function gisToBlocks:drawline(cx1, cy1, cx2, cy2, cz, blockId)
+function gisToBlocks:drawline(x1, y1, x2, y2, z, blockId)
 	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
-	cx=cx1;
-	cy=cy1;
-	dcx=math.abs(cx2-cx1);
-	dcy=math.abs(cy2-cy1);
-
-	if(cx2>cx1) then
-		s1=1;
-	else
-		s1=-1;
-	end
-
-	if(cy2 > cy1) then
-		s2 = 1;
-	else
-		s2 = -1;
-	end
-
-	if(dcy > dcx) then
-		temp = dcx;
-		dcx   = dcy;
-		dcy   = temp;
-	    interchange = 1;
-	else
-	    interchange = 0;
-	end
-
-	p = 2*dcy - dcx;
-
-	for i=1,dcx do
-		self:drawpixel(cx, cy, cz, blockId);
-
-		if(p>=0) then
-			if(interchange==0) then
-				cy = cy+s2;
-			else
-				cx = cx+s1;
-			end
-			p = p-2*dcx;
-		end
-
-		if(interchange == 0) then
-			cx = cx+s1; 
-		else
-			cy = cy+s2;
-		end
-
-		p = p+2*dcy;
-	end
+	if math.abs(x2-x1) > math.abs(y2-y1) then  
+        steps = math.abs(x2 - x1);  
+    else
+        steps = math.abs(y2 - y1);  
+    end  
+        increx = (x2 - x1)/steps;  
+        increy = (y2 - y1)/steps;  
+        x = x1;  
+        y = y1;  
+    for i = 0,steps do  
+        self:drawpixel(x,y,z,blockId);  
+        x = x + increx;
+        y = y + increy;
+    end  
 end
 
 function gisToBlocks:OSMToBlock(vector, px, py, pz)
@@ -387,18 +353,19 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 				end
 			end
 
-			local startPoint = {cx = point.left, cy = point.bottom, cz = 6};
-			local endPoint   = {cx = point.right, cy = point.top, cz = 6};
+			local startPoint = {cx = point.left, cy = point.bottom};
+			local endPoint   = {cx = point.right, cy = point.top};
 			
 			if(type == "building" or type == "buildingMore") then
-				startPoint.level = point.level;
-				endPoint.level   = point.level;
+				startPoint.cz    = 5 + point.level * 3;
+				endPoint.cz      = 5 + point.level * 3;
+			else
+				startPoint.cz = 6;
+				endPoint.cz   = 6;
 			end
 
 			currentPoint = {};
 			currentPoint = commonlib.copy(startPoint);
-
-			--LOG.std(nil,"debug","currentPoint",currentPoint);
 
 			local linePoint = {};
 
@@ -463,12 +430,16 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 
 							if(count == 4) then
 								local height;
-								if(type == "building" or type == "buildingMore") then
-									height = (currentPoint.cz - 1) + currentPoint.level * 3;
+								height = currentPoint.cz;
+
+								if(type == "waterMore") then
+									for i=1,4 do
+										height = height - 1;
+										BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
+									end
 								else
-									height = currentPoint.cz;
+									BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
 								end
-								BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
 							end
 						end
 
@@ -496,7 +467,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 				buildingLevel = commonlib.copy(tagnode.attr.v);
 			end
 
-			LOG.std(nil,"debug","buildingLevel",buildingLevel);
+			--LOG.std(nil,"debug","buildingLevel",buildingLevel);
 		end
 
 		for tagnode in commonlib.XPath.eachNode(waynode, "/tag") do	
@@ -584,7 +555,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 						osmBuildingCount = osmBuildingCount + 1;
 						osmBuildingList[osmBuildingCount] = osmBuilding;
 
-						echo(osmBuildingList);
+						--echo(osmBuildingList);
 					else
 						for key,point in pairs(curNd) do
 							if(point.x) then
@@ -644,7 +615,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 				local waterPointCount = 0;
 
 				local isNew = true;
-				LOG.std(nil,"debug","gisToBlocks.crossPointLists",gisToBlocks.crossPointLists);
+				--LOG.std(nil,"debug","gisToBlocks.crossPointLists",gisToBlocks.crossPointLists);
 				if(#gisToBlocks.crossPointLists ~= 0) then
 					for key,crossWaterList in pairs(gisToBlocks.crossPointLists) do
 						if(crossWaterList.id == waynode.attr.id) then
@@ -675,8 +646,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 
 							if(isDraw) then
 								draw2Point(self,crossWaterList.points,4,"waterMore");
-								draw2area(self,crossWaterList.points,76);
-								--crossWaterList = false;
+								draw2area(self,crossWaterList.points,76,"waterMore");
+								crossWaterList = false;
 							end
 						end
 					end
@@ -758,7 +729,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 			waterPointList = v.points;
 		
 			draw2Point(self,waterPointList,4,"water");
-			draw2area(self,waterPointList,76);
+			draw2area(self,waterPointList,76,"waterMore");
 		end
 	end
 
